@@ -466,8 +466,33 @@ def replace_latex_with_images(md_text: str, output_dir: str = "latex_equations",
     
     return md_text
 
+def is_list_or_special_line(line: str) -> bool:
+    """라인이 리스트 항목이나 특수 패턴으로 시작하는지 확인
+    
+    Args:
+        line: 검사할 라인
+        
+    Returns:
+        True면 리스트/특수 라인, False면 일반 텍스트
+    """
+    stripped = line.lstrip()
+    # 순서 없는 리스트: -, *, +
+    if stripped.startswith(('- ', '* ', '+ ')):
+        return True
+    # 순서 있는 리스트: 1., 2., 등
+    if re.match(r'^\d+\.\s', stripped):
+        return True
+    # 해시태그: #
+    if stripped.startswith('#'):
+        return True
+    return False
+
 def normalize_markdown_spacing(md_text: str) -> str:
-    """Markdown 리스트 앞에 빈 줄 추가 및 이스케이프된 볼드 마커 복원 (python-markdown 호환성)"""
+    """Markdown 리스트 앞에 빈 줄 추가 및 이스케이프된 볼드 마커 복원 (python-markdown 호환성)
+    
+    리스트나 특수 라인들 사이에 빈 줄이 없으면 <br/> 태그를 추가하여 
+    HTML 렌더링 시 줄바꿈이 표시되도록 합니다.
+    """
     # BOM(Byte Order Mark) 제거: UTF-8 BOM(\ufeff)이 파일 앞에 있으면 Markdown 파싱 실패
     if md_text and md_text[0] == '\ufeff':
         md_text = md_text[1:]
@@ -476,11 +501,27 @@ def normalize_markdown_spacing(md_text: str) -> str:
     # 패턴: 백슬래시로 이스케이프된 별표 쌍만 변환
     md_text = re.sub(r'\\\*\\\*([^*]+?)\\\*\\\*', r'**\1**', md_text)
     
-    # **텍스트**: 다음에 바로 숫자 리스트가 오는 경우 빈 줄 삽입
-    #md_text = re.sub(r'(\*\*[^*]+\*\*:)\n(\d+\.)', r'\1\n\n\2', md_text)
-    # 일반 텍스트 뒤에 바로 숫자 리스트가 오는 경우 (표 뒤 등)
-    #md_text = re.sub(r'([^\n])\n(\d+\. \*\*)', r'\1\n\n\2', md_text)
-    return md_text
+    # 리스트 항목 사이에 <br/> 추가 (빈 줄이 없는 경우만)
+    lines = md_text.split('\n')
+    result_lines = []
+    
+    for i, line in enumerate(lines):
+        result_lines.append(line)
+        
+        # 마지막 라인이 아니고, 현재 라인이 비어있지 않은 경우
+        if i < len(lines) - 1 and line.strip():
+            next_line = lines[i + 1]
+            
+            # 다음 라인이 비어있으면 이미 구분되어 있으므로 <br/> 추가 안함
+            if not next_line.strip():
+                continue
+            
+            # 다음 라인이 리스트나 특수 라인으로 시작하는 경우
+            # 현재 라인도 콘텐츠가 있으면 <br/> 추가
+            if is_list_or_special_line(next_line):
+                result_lines.append('<br/>')
+    
+    return '\n'.join(result_lines)
 
 def md_to_html(
     md_text: str, 
