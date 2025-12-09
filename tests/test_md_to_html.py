@@ -6,7 +6,7 @@ from helper_md_doc import md_to_html, __version__
 
 def test_version():
     """버전이 올바르게 설정되었는지 확인"""
-    assert __version__ == "0.5.0"
+    assert __version__ == "0.5.2"
 
 
 def test_md_to_html_basic():
@@ -17,6 +17,15 @@ def test_md_to_html_basic():
     assert "<h1>제목</h1>" in html
     assert "<strong>굵은 글씨</strong>" in html
     assert "<title>테스트</title>" in html
+
+
+def test_md_to_html_escaped_bold():
+    """이스케이프된 볼드 마커(\\*\\*) 복원 테스트"""
+    md_text = "# 테스트\n\n\\*\\*DTLS(Datagram Transport Layer Security)\\*\\*는 보안 프로토콜입니다."
+    html = md_to_html(md_text, title="이스케이프 테스트", use_base64=True)
+    
+    assert "<strong>DTLS(Datagram Transport Layer Security)</strong>" in html
+    assert "**DTLS" not in html  # 리터럴 별표가 남지 않아야 함
 
 
 def test_md_to_html_with_list():

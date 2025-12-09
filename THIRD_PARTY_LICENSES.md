@@ -40,4 +40,4 @@ Mermaid는 MIT 라이선스로 배포됩니다.
 
 ## 라이선스 호환성
 
-`helper-md_doc` 패키지는 MIT 라이선스로 배포되며, 포함된 모든 서드파티 라이브러리(KaTeX MIT, KaTeX Fonts OFL-1.1, Mermaid MIT)는 MIT 라이선스와 호환됩니다.
+`helper-md-doc` 패키지는 MIT 라이선스로 배포되며, 포함된 모든 서드파티 라이브러리(KaTeX MIT, KaTeX Fonts OFL-1.1, Mermaid MIT)는 MIT 라이선스와 호환됩니다.

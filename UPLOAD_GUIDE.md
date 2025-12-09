@@ -1,4 +1,4 @@
-# helper-md_doc pip 업로드 가이드
+# helper-md-doc pip 업로드 가이드
 
 ## 사전 준비
 
@@ -10,7 +10,7 @@
 1. PyPI 계정 로그인
 2. Account Settings → API tokens
 3. "Add API token" 클릭
-4. Token name 입력 (예: helper-md_doc)
+4. Token name 입력 (예: helper-md-doc)
 5. Scope: "Entire account" 또는 특정 프로젝트 선택
 6. 생성된 토큰 복사 (한 번만 표시됨!)
 
@@ -52,7 +52,7 @@ version = "0.5.0"  # 예: 0.5.1, 0.6.0 등으로 변경
 
 `src/helper_md_doc/__init__.py`에서도 동일하게 수정:
 ```python
-__version__ = "0.5.0"
+__version__ = "0.5.2"
 ```
 
 ### 2. 로컬 테스트
@@ -91,7 +91,7 @@ python -m venv test_env
 source test_env/bin/activate  # Windows: test_env\Scripts\activate
 
 # TestPyPI에서 설치
-pip install --index-url https://test.pypi.org/simple/ helper-md_doc
+pip install --index-url https://test.pypi.org/simple/ helper-md-doc
 
 # 필수 의존성 설치 (TestPyPI에는 없을 수 있음)
 pip install markdown playwright pypandoc
@@ -117,7 +117,7 @@ python upload_helper_md_doc.py
 ### 7. PyPI에서 설치 테스트
 
 ```bash
-pip install helper-md_doc
+pip install helper-md-doc
 playwright install chromium
 
 # 테스트
@@ -184,22 +184,22 @@ playwright install chromium
 
 ### 패키지 정보 확인
 ```bash
-pip show helper-md_doc
+pip show helper-md-doc
 ```
 
 ### 패키지 삭제
 ```bash
-pip uninstall helper-md_doc
+pip uninstall helper-md-doc
 ```
 
 ### 특정 버전 설치
 ```bash
-pip install helper-md_doc==0.5.0
+pip install helper-md-doc==0.5.2
 ```
 
 ### 최신 버전으로 업그레이드
 ```bash
-pip install --upgrade helper-md_doc
+pip install --upgrade helper-md-doc
 ```
 
 ## 체크리스트
@@ -212,7 +212,7 @@ pip install --upgrade helper-md_doc
 - [ ] 정적 파일(KaTeX 폰트 등) 포함 확인
 - [ ] README.md 업데이트 (변경사항, 사용법 등)
 - [ ] CHANGELOG.md 작성 (선택사항)
-- [ ] Git 태그 생성: `git tag v0.5.0 && git push origin v0.5.0`
+- [ ] Git 태그 생성: `git tag v0.5.2 && git push origin v0.5.2`
 
 ## 참고 자료
 

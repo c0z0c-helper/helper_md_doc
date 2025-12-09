@@ -467,7 +467,15 @@ def replace_latex_with_images(md_text: str, output_dir: str = "latex_equations",
     return md_text
 
 def normalize_markdown_spacing(md_text: str) -> str:
-    """Markdown 리스트 앞에 빈 줄 추가 (python-markdown 호환성)"""
+    """Markdown 리스트 앞에 빈 줄 추가 및 이스케이프된 볼드 마커 복원 (python-markdown 호환성)"""
+    # BOM(Byte Order Mark) 제거: UTF-8 BOM(\ufeff)이 파일 앞에 있으면 Markdown 파싱 실패
+    if md_text and md_text[0] == '\ufeff':
+        md_text = md_text[1:]
+    
+    # 이스케이프된 볼드 마커 제거: \*\*text\*\* → **text**
+    # 패턴: 백슬래시로 이스케이프된 별표 쌍만 변환
+    md_text = re.sub(r'\\\*\\\*([^*]+?)\\\*\\\*', r'**\1**', md_text)
+    
     # **텍스트**: 다음에 바로 숫자 리스트가 오는 경우 빈 줄 삽입
     #md_text = re.sub(r'(\*\*[^*]+\*\*:)\n(\d+\.)', r'\1\n\n\2', md_text)
     # 일반 텍스트 뒤에 바로 숫자 리스트가 오는 경우 (표 뒤 등)

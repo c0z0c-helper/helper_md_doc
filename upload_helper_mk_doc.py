@@ -1,5 +1,5 @@
 """
-helper-md_doc PyPI 업로드 스크립트
+helper-md-doc PyPI 업로드 스크립트
 
 사용법:
     python upload_helper_md_doc.py [--test]
@@ -66,7 +66,7 @@ def main():
     test_mode = "--test" in sys.argv
     
     print("=" * 60)
-    print("helper-md_doc PyPI 업로드")
+    print("helper-md-doc PyPI 업로드")
     print("=" * 60)
     print()
     
@@ -82,10 +82,10 @@ def main():
     # 4. 완료 메시지
     if test_mode:
         print("TestPyPI에서 설치 테스트:")
-        print("   pip install --index-url https://test.pypi.org/simple/ helper-md_doc")
+        print("   pip install --index-url https://test.pypi.org/simple/ helper-md-doc")
     else:
         print("PyPI에서 설치:")
-        print("   pip install helper-md_doc")
+        print("   pip install helper-md-doc")
     
     print()
     print("모든 작업 완료!")

@@ -1,5 +1,5 @@
 """
-helper-md_doc
+helper-md-doc
 =============
 
 Markdown/HTML을 DOCX로 변환하는 문서 변환 라이브러리
@@ -24,7 +24,7 @@ Markdown/HTML을 DOCX로 변환하는 문서 변환 라이브러리
     md_to_doc("input.md", "output.docx")
 """
 
-__version__ = "0.5.0"
+__version__ = "0.5.2"
 
 from .helper_md_html import md_to_html
 from .helper_html_doc import html_to_doc, clean_html_for_pandoc, embed_images_as_base64

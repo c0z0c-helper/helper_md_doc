@@ -1,7 +1,7 @@
-# helper-md_doc
+# helper-md-doc
 
-[![PyPI version](https://badge.fury.io/py/helper-md_doc.svg)](https://badge.fury.io/py/helper-md_doc)
-[![Python](https://img.shields.io/pypi/pyversions/helper-md_doc.svg)](https://pypi.org/project/helper-md_doc/)
+[![PyPI version](https://badge.fury.io/py/helper-md-doc.svg)](https://badge.fury.io/py/helper-md-doc)
+[![Python](https://img.shields.io/pypi/pyversions/helper-md-doc.svg)](https://pypi.org/project/helper-md-doc/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Markdown/HTML을 DOCX로 변환하는 Python 라이브러리 (Mermaid 다이어그램 및 LaTeX 수식 지원)
@@ -19,10 +19,10 @@ Markdown/HTML을 DOCX로 변환하는 Python 라이브러리 (Mermaid 다이어�
 
 ### 기본 설치
 ```bash
-pip install helper-md_doc
+pip install helper-md-doc
 
 # 테스트 서버
-pip install --index-url https://test.pypi.org/simple/ helper-md_doc
+pip install --index-url https://test.pypi.org/simple/ helper-md-doc
 ```
 
 ### Playwright 브라우저 설치 (필수)
@@ -151,3 +151,7 @@ MIT License
 
 ### v0.5.1(2025-12-09)
 - 최초 릴리스
+
+### v0.5.2(2025-12-09)
+- BOM 처리
+- ** 속성 적용

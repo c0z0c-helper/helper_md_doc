@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "helper-md_doc"
-version = "0.5.0"
+name = "helper-md-doc"
+version = "0.5.2"
 description = "Markdown/HTML을 DOCX로 변환하는 문서 변환 라이브러리 (Mermaid/LaTeX 지원)"
 readme = "README.md"
 requires-python = ">=3.8"
