@@ -1,0 +1,4 @@
+# Core dependencies
+markdown>=3.7.0,<4.0.0
+playwright>=1.40.0,<2.0.0
+pypandoc>=1.13,<2.0.0

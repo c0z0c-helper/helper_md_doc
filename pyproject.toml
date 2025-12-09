@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "helper-md_doc"
+version = "0.5.0"
+description = "Markdown/HTML을 DOCX로 변환하는 문서 변환 라이브러리 (Mermaid/LaTeX 지원)"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "c0z0c", email = "c0z0c.dev@gmail.com"}
+]
+keywords = ["markdown", "doc", "docx", "html", "mermaid", "latex", "katex", "document", "converter", "pandoc"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Topic :: Text Processing :: Markup :: HTML",
+]
+
+dependencies = [
+    "markdown>=3.7.0",
+    "playwright>=1.40.0",
+    "pypandoc>=1.13",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/c0z0c-helper/helper_md_doc"
+Repository = "https://github.com/c0z0c-helper/helper_md_doc"
+Issues = "https://github.com/c0z0c-helper/helper_md_doc/issues"
+
+[project.scripts]
+md2html = "helper_md_doc.helper_md_html:main"
+html2doc = "helper_md_doc.helper_html_doc:main"
+md2doc = "helper_md_doc.helper_md_doc:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+helper_md_doc = [
+    "katex/*.js",
+    "katex/*.css",
+    "katex/LICENSE",
+    "katex/contrib/*.js",
+    "katex/fonts/*.ttf",
+    "katex/fonts/*.woff",
+    "katex/fonts/*.woff2",
+    "katex/fonts/OFL.txt",
+    "mermaid/*.js",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py38", "py39", "py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"

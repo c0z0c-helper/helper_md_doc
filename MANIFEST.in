@@ -1,0 +1,9 @@
+include README.md
+include LICENSE
+include THIRD_PARTY_LICENSES.md
+include requirements.txt
+include requirements-dev.txt
+recursive-include src/helper_md_doc/katex *.js *.css LICENSE
+recursive-include src/helper_md_doc/katex/contrib *.js
+recursive-include src/helper_md_doc/katex/fonts *.ttf *.woff *.woff2 OFL.txt
+recursive-include src/helper_md_doc/mermaid *.js
