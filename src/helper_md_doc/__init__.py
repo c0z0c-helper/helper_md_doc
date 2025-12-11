@@ -27,7 +27,13 @@ Markdown/HTML을 DOCX로 변환하는 문서 변환 라이브러리
 __version__ = "0.5.5"
 
 import os
+import sys
+from pathlib import Path
 import importlib.util
+
+_project_root = Path(__file__).resolve().parents[1]
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
 spec = importlib.util.spec_from_file_location(
     "requirements_rnac", os.path.join(os.path.dirname(__file__), "requirements_rnac.py")
@@ -36,9 +42,9 @@ requirements_rnac = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(requirements_rnac)
 requirements_rnac.check_and_print_dependencies()
 
-from .helper_md_html import md_to_html
-from .helper_html_doc import html_to_doc, clean_html_for_pandoc, embed_images_as_base64
-from .helper_md_doc import md_to_doc
+from helper_md_doc.helper_md_html import md_to_html
+from helper_md_doc.helper_html_doc import html_to_doc, clean_html_for_pandoc, embed_images_as_base64
+from helper_md_doc.helper_md_doc import md_to_doc
 
 __all__ = [
     "md_to_html",

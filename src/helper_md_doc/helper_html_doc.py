@@ -7,7 +7,6 @@ import os
 import re
 import sys
 import logging
-import pypandoc
 from pathlib import Path
 from typing import Optional
 
@@ -25,6 +24,8 @@ spec = importlib.util.spec_from_file_location(
 requirements_rnac = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(requirements_rnac)
 requirements_rnac.check_and_install_dependencies()
+
+import pypandoc
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
