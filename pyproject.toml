@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "helper-md-doc"
-version = "0.5.3"
+version = "0.5.4"
 description = "Markdown/HTML을 DOCX로 변환하는 문서 변환 라이브러리 (Mermaid/LaTeX 지원)"
 readme = "README.md"
 requires-python = ">=3.8"

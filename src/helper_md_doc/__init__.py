@@ -24,7 +24,7 @@ Markdown/HTML을 DOCX로 변환하는 문서 변환 라이브러리
     md_to_doc("input.md", "output.docx")
 """
 
-__version__ = "0.5.3"
+__version__ = "0.5.4"
 
 import os
 import importlib.util
