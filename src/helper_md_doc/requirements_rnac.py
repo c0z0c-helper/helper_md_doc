@@ -105,8 +105,9 @@ def check_and_install_dependencies() -> None:
 
     if not missing_packages:
         logging.debug("모든 필수 라이브러리가 설치되어 있습니다.")
-        # playwright 브라우저 바이너리 확인
-        _check_playwright_browsers()
+        # playwright가 requirements.txt에 있으면 브라우저 바이너리 확인
+        if "playwright" in required_packages:
+            _check_playwright_browsers()
         return
 
     logging.warning("다음 라이브러리가 설치되지 않았습니다:")
@@ -179,10 +180,11 @@ def check_and_install_dependencies() -> None:
 
 
 def _check_playwright_browsers() -> None:
-    """Playwright 브라우저 바이너리 확인 및 필요시 설치"""
+    """Playwright 브라우저 바이너리 확인 및 필요시 설치
+
+    주의: playwright가 설치되어 있어야 이 함수를 호출할 수 있습니다.
+    """
     try:
-        __import__("playwright")
-        # playwright가 설치되어 있으면 브라우저 바이너리 확인
         from playwright.sync_api import sync_playwright
 
         try:
@@ -199,4 +201,4 @@ def _check_playwright_browsers() -> None:
             if response == "y":
                 install_playwright_browsers()
     except ImportError:
-        pass
+        logging.debug("Playwright가 설치되지 않았습니다. 건너뜁니다.")

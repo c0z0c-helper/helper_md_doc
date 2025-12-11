@@ -6,7 +6,7 @@ from helper_md_doc import md_to_html, __version__
 
 def test_version():
     """버전이 올바르게 설정되었는지 확인"""
-    assert __version__ == "0.5.4"
+    assert __version__ == "0.5.5"
 
 
 def test_md_to_html_basic():
