@@ -3,7 +3,7 @@ helper-md-doc PyPI 업로드 스크립트
 
 사용법:
     python upload_helper_md_doc.py [--test]
-    
+
 옵션:
     --test: TestPyPI에 업로드 (기본값: PyPI)
 """
@@ -30,12 +30,12 @@ def build_package():
     """패키지 빌드"""
     print("패키지 빌드 중...")
     result = subprocess.run([sys.executable, "-m", "build"], capture_output=True, text=True)
-    
+
     if result.returncode != 0:
         print("빌드 실패:")
         print(result.stderr)
         sys.exit(1)
-    
+
     print("빌드 완료\n")
     return result
 
@@ -44,41 +44,41 @@ def upload_package(test_mode=False):
     """패키지 업로드"""
     repository = "testpypi" if test_mode else "pypi"
     repo_name = "TestPyPI" if test_mode else "PyPI"
-    
+
     print(f"{repo_name}에 업로드 중...")
-    
+
     cmd = [sys.executable, "-m", "twine", "upload"]
     if test_mode:
         cmd.extend(["--repository", "testpypi"])
     cmd.append("dist/*")
-    
+
     result = subprocess.run(cmd)
-    
+
     if result.returncode != 0:
         print(f"{repo_name} 업로드 실패")
         sys.exit(1)
-    
+
     print(f"{repo_name} 업로드 완료\n")
 
 
 def main():
     """메인 실행 함수"""
     test_mode = "--test" in sys.argv
-    
+
     print("=" * 60)
     print("helper-md-doc PyPI 업로드")
     print("=" * 60)
     print()
-    
+
     # 1. 빌드 디렉토리 정리
     clean_build()
-    
+
     # 2. 패키지 빌드
     build_package()
-    
+
     # 3. 패키지 업로드
     upload_package(test_mode)
-    
+
     # 4. 완료 메시지
     if test_mode:
         print("TestPyPI에서 설치 테스트:")
@@ -86,7 +86,7 @@ def main():
     else:
         print("PyPI에서 설치:")
         print("   pip install helper-md-doc")
-    
+
     print()
     print("모든 작업 완료!")
 

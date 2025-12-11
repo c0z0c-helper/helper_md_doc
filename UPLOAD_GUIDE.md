@@ -52,7 +52,7 @@ version = "0.5.0"  # 예: 0.5.1, 0.6.0 등으로 변경
 
 `src/helper_md_doc/__init__.py`에서도 동일하게 수정:
 ```python
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 ```
 
 ### 2. 로컬 테스트
@@ -194,7 +194,7 @@ pip uninstall helper-md-doc
 
 ### 특정 버전 설치
 ```bash
-pip install helper-md-doc==0.5.2
+pip install helper-md-doc==0.5.3
 ```
 
 ### 최신 버전으로 업그레이드
@@ -212,7 +212,7 @@ pip install --upgrade helper-md-doc
 - [ ] 정적 파일(KaTeX 폰트 등) 포함 확인
 - [ ] README.md 업데이트 (변경사항, 사용법 등)
 - [ ] CHANGELOG.md 작성 (선택사항)
-- [ ] Git 태그 생성: `git tag v0.5.2 && git push origin v0.5.2`
+- [ ] Git 태그 생성: `git tag v0.5.3 && git push origin v0.5.3`
 
 ## 참고 자료
 

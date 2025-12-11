@@ -5,45 +5,55 @@ import argparse
 import os
 import sys
 import logging
-import pypandoc
+import subprocess
+from pathlib import Path
 from typing import Optional
-try:
-    from .helper_md_html import md_to_html, _cleanup_browser
-    from .helper_html_doc import clean_html_for_pandoc
-except ImportError:
-    from helper_md_html import md_to_html, _cleanup_browser
-    from helper_html_doc import clean_html_for_pandoc
 
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+# 패키지 루트를 sys.path에 추가하여 절대 임포트 통일
+_project_root = Path(__file__).resolve().parents[1]
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+
+# 의존성 확인 및 설치
+import importlib.util
+
+spec = importlib.util.spec_from_file_location(
+    "requirements_rnac", os.path.join(os.path.dirname(__file__), "requirements_rnac.py")
+)
+requirements_rnac = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(requirements_rnac)
+requirements_rnac.check_and_install_dependencies()
+
+import pypandoc
+from helper_md_doc.helper_md_html import md_to_html, _cleanup_browser
+from helper_md_doc.helper_html_doc import clean_html_for_pandoc
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
 def md_to_doc(md_path: str, output_path: str, title: Optional[str] = None) -> None:
     """Markdown 파일을 DOCX로 변환 (Mermaid/LaTeX를 Base64 PNG로 임베딩)
-    
+
     Args:
         md_path: 입력 Markdown 파일 경로
         output_path: 출력 DOCX 파일 경로
         title: HTML 문서 제목 (None일 경우 첫 번째 # 헤더 사용)
     """
     logging.info(f"Markdown 읽기: {md_path}")
-    with open(md_path, 'r', encoding='utf-8') as f:
+    with open(md_path, "r", encoding="utf-8") as f:
         md_text = f.read()
-    
+
     logging.debug("Markdown -> HTML 변환 중 (Mermaid/LaTeX -> Base64 PNG)...")
     html_text = md_to_html(md_text, title=title, use_base64=True)
-    
+
     logging.debug("HTML 정리 중 (스크립트 태그 제거)...")
     html_text = clean_html_for_pandoc(html_text)
-    
+
     logging.debug("HTML -> DOCX 변환 중...")
     pypandoc.convert_text(
-        html_text,
-        'docx',
-        format='html',
-        outputfile=output_path,
-        extra_args=['--standalone']
+        html_text, "docx", format="html", outputfile=output_path, extra_args=["--standalone"]
     )
-    
+
     _cleanup_browser()
     logging.info(f"변환 완료: {output_path}")
 
@@ -64,7 +74,7 @@ def main():
 
     out_path = args.output or os.path.splitext(in_path)[0] + ".docx"
     title = args.title or os.path.splitext(os.path.basename(in_path))[0]
-    
+
     md_to_doc(in_path, out_path, title)
 
 
