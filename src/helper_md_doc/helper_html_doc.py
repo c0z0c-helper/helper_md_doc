@@ -86,13 +86,16 @@ def embed_images_as_base64(html_text: str, base_dir: str) -> str:
 
 def clean_html_for_pandoc(html_text: str) -> str:
     """
-    Pandoc 변환을 위해 HTML 정리: KaTeX 스크립트/링크 제거.
+    Pandoc 변환을 위해 HTML 정리: KaTeX 스크립트/링크 제거 및 코드블록 래핑.
+
+    <pre><code> 블록을 custom-style="Code Fence" Div로 래핑하여
+    DOCX 변환 시 Code Fence 스타일(테두리 박스)이 적용되도록 합니다.
 
     Args:
         html_text: 원본 HTML 텍스트
 
     Returns:
-        정리된 HTML 텍스트 (수식 블록 $$...$$ 유지)
+        정리된 HTML 텍스트
     """
     html_text = re.sub(r"<link[^>]*katex[^>]*>", "", html_text, flags=re.IGNORECASE)
     html_text = re.sub(
@@ -102,7 +105,36 @@ def clean_html_for_pandoc(html_text: str) -> str:
         r"<script[^>]*mermaid[^>]*>.*?</script>", "", html_text, flags=re.IGNORECASE | re.DOTALL
     )
 
+    # <pre><code ...>...</code></pre> 블록을 custom-style="Code Fence" Div로 래핑
+    # pandoc은 <pre> 블록을 SourceCode로 처리하므로, 줄별 <p>로 분해하여 래핑해야
+    # custom-style 속성이 정상 적용됨
+    def wrap_pre_block(match: re.Match) -> str:
+        inner = match.group(1)
+        # HTML 엔티티 복원 (pandoc이 plain text로 전달받도록)
+        inner = inner.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"')
+        # 줄별로 <p> 태그로 감싸기 (빈 줄은 공백 유지)
+        lines = inner.split("\n")
+        # 마지막 빈 줄 제거
+        while lines and not lines[-1].strip():
+            lines.pop()
+        p_lines = "".join(
+            f"<p>{line if line.strip() else '&#160;'}</p>"
+            for line in lines
+        )
+        return f'<div custom-style="Code Fence">{p_lines}</div>'
+
+    html_text = re.sub(
+        r"<pre><code[^>]*>(.*?)</code></pre>",
+        wrap_pre_block,
+        html_text,
+        flags=re.DOTALL,
+    )
+
     return html_text
+
+
+# 패키지 내장 reference.docx 경로 (Code Fence 스타일 정의 포함)
+_REFERENCE_DOCX = os.path.join(os.path.dirname(__file__), "reference.docx")
 
 
 def html_to_doc(html_path: str, output_path: str) -> None:
@@ -126,8 +158,11 @@ def html_to_doc(html_path: str, output_path: str) -> None:
     html_text = clean_html_for_pandoc(html_text)
 
     logging.debug("DOCX 변환 중...")
+    extra_args = ["--standalone"]
+    if os.path.isfile(_REFERENCE_DOCX):
+        extra_args.append(f"--reference-doc={_REFERENCE_DOCX}")
     pypandoc.convert_text(
-        html_text, "docx", format="html", outputfile=output_path, extra_args=["--standalone"]
+        html_text, "docx", format="html", outputfile=output_path, extra_args=extra_args
     )
 
     logging.info(f"변환 완료: {output_path}")

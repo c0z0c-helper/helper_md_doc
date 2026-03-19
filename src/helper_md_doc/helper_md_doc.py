@@ -50,8 +50,13 @@ def md_to_doc(md_path: str, output_path: str, title: Optional[str] = None) -> No
     html_text = clean_html_for_pandoc(html_text)
 
     logging.debug("HTML -> DOCX 변환 중...")
+    from helper_md_doc.helper_html_doc import _REFERENCE_DOCX
+
+    extra_args = ["--standalone"]
+    if os.path.isfile(_REFERENCE_DOCX):
+        extra_args.append(f"--reference-doc={_REFERENCE_DOCX}")
     pypandoc.convert_text(
-        html_text, "docx", format="html", outputfile=output_path, extra_args=["--standalone"]
+        html_text, "docx", format="html", outputfile=output_path, extra_args=extra_args
     )
 
     _cleanup_browser()

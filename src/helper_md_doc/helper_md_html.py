@@ -627,8 +627,12 @@ def normalize_markdown_spacing(md_text: str) -> str:
             if not next_line.strip():
                 continue
 
-            # 다음 라인이 리스트나 특수 라인으로 시작하는 경우
-            # 현재 라인도 콘텐츠가 있으면 <p/> 추가
+            # 현재 라인이 리스트 항목이면 삽입 안함 (리스트 중간 끊김 방지)
+            if is_list_or_special_line(line):
+                continue
+
+            # 다음 라인이 리스트나 특수 라인으로 시작하는 경우에만 <p/> 삽입
+            # (비-리스트 라인 뒤에 리스트가 시작될 때만 단락 구분 추가)
             if is_list_or_special_line(next_line):
                 result_lines.append("<p/>")
 
