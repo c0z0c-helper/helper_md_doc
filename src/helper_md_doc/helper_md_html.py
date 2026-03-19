@@ -146,7 +146,7 @@ def sanitize_mermaid_code(mermaid_code: str) -> str:
     return mermaid_code
 
 
-def _crop_whitespace(png_bytes: bytes, padding: int = 2, tolerance: int = 10) -> bytes:
+def _crop_whitespace(png_bytes: bytes, padding: int = 2, tolerance: int = 10, dpi: int = 0) -> bytes:
     """PNG bytes에서 가장자리 픽셀 기반으로 배경색을 자동 감지하여 여백을 제거
 
     4개 코너의 3x3 영역 평균값을 배경색으로 추정하고,
@@ -156,6 +156,8 @@ def _crop_whitespace(png_bytes: bytes, padding: int = 2, tolerance: int = 10) ->
         png_bytes: 원본 PNG 바이너리 데이터
         padding: crop 후 사방에 남길 여백 픽셀 수
         tolerance: 배경색으로 판단할 색상 허용 오차 (0~255)
+        dpi: PNG 메타데이터에 삽입할 DPI 값 (0이면 미설정)
+            pandoc은 DPI 정보가 없으면 72dpi로 가정하여 Word에서 크게 표시됨
 
     Returns:
         여백이 제거된 PNG 바이너리 데이터
@@ -206,7 +208,10 @@ def _crop_whitespace(png_bytes: bytes, padding: int = 2, tolerance: int = 10) ->
 
     cropped = rgb.crop((left, top, right, bottom))
     buf = io.BytesIO()
-    cropped.save(buf, format="PNG")
+    save_kwargs: dict = {"format": "PNG"}
+    if dpi > 0:
+        save_kwargs["dpi"] = (dpi, dpi)
+    cropped.save(buf, **save_kwargs)
     return buf.getvalue()
 
 
@@ -372,7 +377,7 @@ def render_latex_to_png(latex_code: str, output_path: str, display_mode: bool = 
         latex_element = page.query_selector("#latex-container")
         if latex_element:
             png_bytes = latex_element.screenshot()
-            png_bytes = _crop_whitespace(png_bytes)
+            png_bytes = _crop_whitespace(png_bytes, dpi=150)
             with open(output_path, "wb") as f:
                 f.write(png_bytes)
         else:
@@ -447,7 +452,7 @@ def render_latex_base64(latex_code: str, display_mode: bool = False) -> str:
         latex_element = page.query_selector("#latex-container")
         if latex_element:
             png_bytes = latex_element.screenshot()
-            png_bytes = _crop_whitespace(png_bytes)
+            png_bytes = _crop_whitespace(png_bytes, dpi=150)
             b64_data = base64.b64encode(png_bytes).decode("utf-8")
             return f"data:image/png;base64,{b64_data}"
         else:
@@ -595,6 +600,9 @@ def is_list_or_special_line(line: str) -> bool:
     # 해시태그: #
     if stripped.startswith("#"):
         return True
+    # 수평선: ---, ***, ___ (3개 이상 반복)
+    if re.match(r"^(-{3,}|\*{3,}|_{3,})\s*$", stripped):
+        return True
     return False
 
 
@@ -628,7 +636,8 @@ def normalize_markdown_spacing(md_text: str) -> str:
                 continue
 
             # 현재 라인이 리스트 항목이면 삽입 안함 (리스트 중간 끊김 방지)
-            if is_list_or_special_line(line):
+            # 단, 수평선(---)은 예외: 뒤에 오는 라인과 구분이 필요
+            if is_list_or_special_line(line) and not re.match(r"^(-{3,}|\*{3,}|_{3,})\s*$", line.lstrip()):
                 continue
 
             # 다음 라인이 리스트나 특수 라인으로 시작하는 경우에만 <p/> 삽입

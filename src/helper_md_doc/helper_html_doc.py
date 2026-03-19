@@ -117,10 +117,19 @@ def clean_html_for_pandoc(html_text: str) -> str:
         # 마지막 빈 줄 제거
         while lines and not lines[-1].strip():
             lines.pop()
-        p_lines = "".join(
-            f"<p>{line if line.strip() else '&#160;'}</p>"
-            for line in lines
-        )
+
+        def preserve_indent(line: str) -> str:
+            """선행 공백/탭을 &#160;(NBSP)로 치환하여 DOCX에서 들여쓰기 보존."""
+            if not line:
+                return "&#160;"
+            # 선행 공백 문자(스페이스·탭) 개수 계산 후 NBSP로 치환
+            stripped = line.lstrip()
+            indent = line[: len(line) - len(stripped)]
+            # 탭은 4 NBSP, 스페이스는 1 NBSP로 변환
+            nbsp_indent = indent.replace("\t", "&#160;&#160;&#160;&#160;").replace(" ", "&#160;")
+            return nbsp_indent + stripped
+
+        p_lines = "".join(f"<p>{preserve_indent(line)}</p>" for line in lines)
         return f'<div custom-style="Code Fence">{p_lines}</div>'
 
     html_text = re.sub(
