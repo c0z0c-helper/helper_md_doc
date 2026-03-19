@@ -139,6 +139,14 @@ def clean_html_for_pandoc(html_text: str) -> str:
         flags=re.DOTALL,
     )
 
+    # 블록 수식 div (text-align:center) → custom-style="Image Center"
+    # 패턴: <div style="text-align: center; ..."><img ... /></div>
+    html_text = re.sub(
+        r'<div style="text-align: center;[^"]*">(<img [^>]+/>)</div>',
+        r'<div custom-style="Image Center">\1</div>',
+        html_text,
+    )
+
     return html_text
 
 

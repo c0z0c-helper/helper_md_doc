@@ -4,3 +4,4 @@ black>=23.0.0
 ruff>=0.1.0
 build>=1.0.0
 twine>=4.0.0
+lxml>=4.9.0
