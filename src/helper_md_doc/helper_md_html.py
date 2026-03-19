@@ -25,7 +25,10 @@ requirements_rnac = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(requirements_rnac)
 requirements_rnac.check_and_install_dependencies()
 
+import io
+
 import markdown
+from PIL import Image, ImageChops
 from playwright.sync_api import sync_playwright, Browser, Page
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -143,6 +146,70 @@ def sanitize_mermaid_code(mermaid_code: str) -> str:
     return mermaid_code
 
 
+def _crop_whitespace(png_bytes: bytes, padding: int = 2, tolerance: int = 10) -> bytes:
+    """PNG bytes에서 가장자리 픽셀 기반으로 배경색을 자동 감지하여 여백을 제거
+
+    4개 코너의 3x3 영역 평균값을 배경색으로 추정하고,
+    배경색과 유사한(tolerance 이내) 가장자리 픽셀을 제거합니다.
+
+    Args:
+        png_bytes: 원본 PNG 바이너리 데이터
+        padding: crop 후 사방에 남길 여백 픽셀 수
+        tolerance: 배경색으로 판단할 색상 허용 오차 (0~255)
+
+    Returns:
+        여백이 제거된 PNG 바이너리 데이터
+    """
+    img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+    # 알파 채널을 흰색 배경에 합성하여 RGB로 변환
+    bg = Image.new("RGBA", img.size, (255, 255, 255, 255))
+    bg.paste(img, mask=img.split()[3])
+    rgb = bg.convert("RGB")
+
+    w, h = rgb.size
+
+    # 4개 코너의 3x3 영역 픽셀을 샘플링하여 배경색 추정
+    corner_size = min(3, w, h)
+    sample_pixels: List[Tuple[int, int, int]] = []
+    regions = [
+        (0, 0, corner_size, corner_size),                   # top-left
+        (w - corner_size, 0, w, corner_size),               # top-right
+        (0, h - corner_size, corner_size, h),               # bottom-left
+        (w - corner_size, h - corner_size, w, h),           # bottom-right
+    ]
+    for region in regions:
+        patch = rgb.crop(region)
+        sample_pixels.extend(tuple(patch.getdata()))  # type: ignore[arg-type]
+
+    r_avg = sum(p[0] for p in sample_pixels) // len(sample_pixels)
+    g_avg = sum(p[1] for p in sample_pixels) // len(sample_pixels)
+    b_avg = sum(p[2] for p in sample_pixels) // len(sample_pixels)
+    bg_color = (r_avg, g_avg, b_avg)
+
+    # 배경색 단색 이미지와의 차이를 계산하여 콘텐츠 영역 bbox 추출
+    bg_image = Image.new("RGB", rgb.size, bg_color)
+    diff = ImageChops.difference(rgb, bg_image)
+
+    # tolerance 적용: 차이가 tolerance 이하인 픽셀을 배경(0)으로 처리
+    lut = [0 if v <= tolerance else v for v in range(256)]
+    diff = diff.point(lut * 3)  # RGB 3채널 동일 적용
+
+    bbox = diff.getbbox()
+    if bbox is None:
+        return png_bytes
+
+    # padding 적용 및 이미지 경계 clamp
+    left = max(0, bbox[0] - padding)
+    top = max(0, bbox[1] - padding)
+    right = min(w, bbox[2] + padding)
+    bottom = min(h, bbox[3] + padding)
+
+    cropped = rgb.crop((left, top, right, bottom))
+    buf = io.BytesIO()
+    cropped.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 def png_to_base64(png_path: str) -> str:
     """PNG 파일을 Base64 문자열로 인코딩
 
@@ -186,10 +253,13 @@ def render_mermaid_to_png(mermaid_code: str, output_path: str) -> str:
     page.evaluate("void mermaid.run({ querySelector: '.mermaid' })")
     page.wait_for_selector(".mermaid svg", timeout=5000)
 
-    # SVG 요소 스크린샷
+    # SVG 요소 스크린샷 후 여백 제거
     svg_element = page.query_selector(".mermaid svg")
     if svg_element:
-        svg_element.screenshot(path=output_path)
+        png_bytes = svg_element.screenshot()
+        png_bytes = _crop_whitespace(png_bytes)
+        with open(output_path, "wb") as f:
+            f.write(png_bytes)
 
     return output_path
 
@@ -223,6 +293,7 @@ def render_mermaid_base64(mermaid_code: str) -> str:
     svg_element = page.query_selector(".mermaid svg")
     if svg_element:
         png_bytes = svg_element.screenshot()
+        png_bytes = _crop_whitespace(png_bytes)
         b64_data = base64.b64encode(png_bytes).decode("utf-8")
         return f"data:image/png;base64,{b64_data}"
 
@@ -297,10 +368,13 @@ def render_latex_to_png(latex_code: str, output_path: str, display_mode: bool = 
         page.set_content(html_content)
         page.wait_for_load_state("networkidle")
 
-        # 렌더링된 요소 스크린샷 (흰색 배경)
+        # 렌더링된 요소 스크린샷 후 여백 제거
         latex_element = page.query_selector("#latex-container")
         if latex_element:
-            latex_element.screenshot(path=output_path)
+            png_bytes = latex_element.screenshot()
+            png_bytes = _crop_whitespace(png_bytes)
+            with open(output_path, "wb") as f:
+                f.write(png_bytes)
         else:
             logging.warning(f"LaTeX 렌더링 실패: {latex_code[:50]}...")
     finally:
@@ -373,6 +447,7 @@ def render_latex_base64(latex_code: str, display_mode: bool = False) -> str:
         latex_element = page.query_selector("#latex-container")
         if latex_element:
             png_bytes = latex_element.screenshot()
+            png_bytes = _crop_whitespace(png_bytes)
             b64_data = base64.b64encode(png_bytes).decode("utf-8")
             return f"data:image/png;base64,{b64_data}"
         else:
@@ -526,8 +601,8 @@ def is_list_or_special_line(line: str) -> bool:
 def normalize_markdown_spacing(md_text: str) -> str:
     """Markdown 리스트 앞에 빈 줄 추가 및 이스케이프된 볼드 마커 복원 (python-markdown 호환성)
 
-    리스트나 특수 라인들 사이에 빈 줄이 없으면 <br/> 태그를 추가하여
-    HTML 렌더링 시 줄바꿈이 표시되도록 합니다.
+    리스트나 특수 라인들 사이에 빈 줄이 없으면 <p/> 태그를 추가하여
+    DOCX 변환 시 단락 구분(^p)이 표시되도록 합니다.
     """
     # BOM(Byte Order Mark) 제거: UTF-8 BOM(\ufeff)이 파일 앞에 있으면 Markdown 파싱 실패
     if md_text and md_text[0] == "\ufeff":
@@ -537,7 +612,7 @@ def normalize_markdown_spacing(md_text: str) -> str:
     # 패턴: 백슬래시로 이스케이프된 별표 쌍만 변환
     md_text = re.sub(r"\\\*\\\*([^*]+?)\\\*\\\*", r"**\1**", md_text)
 
-    # 리스트 항목 사이에 <br/> 추가 (빈 줄이 없는 경우만)
+    # 리스트 항목 사이에 <p/> 추가 (빈 줄이 없는 경우만)
     lines = md_text.split("\n")
     result_lines = []
 
@@ -548,16 +623,21 @@ def normalize_markdown_spacing(md_text: str) -> str:
         if i < len(lines) - 1 and line.strip():
             next_line = lines[i + 1]
 
-            # 다음 라인이 비어있으면 이미 구분되어 있으므로 <br/> 추가 안함
+            # 다음 라인이 비어있으면 이미 구분되어 있으므로 <p/> 추가 안함
             if not next_line.strip():
                 continue
 
             # 다음 라인이 리스트나 특수 라인으로 시작하는 경우
-            # 현재 라인도 콘텐츠가 있으면 <br/> 추가
+            # 현재 라인도 콘텐츠가 있으면 <p/> 추가
             if is_list_or_special_line(next_line):
-                result_lines.append("<br/>")
+                result_lines.append("<p/>")
 
-    return "\n".join(result_lines)
+    result = "\n".join(result_lines)
+
+    # 중복/혼합 단락 구분 정규화: <br/> 또는 <p/>가 연속될 경우 단일 <p/>로 통합
+    result = re.sub(r"(<br/>|<p/>)(\n(<br/>|<p/>))+", "<p/>", result)
+
+    return result
 
 
 def md_to_html(md_text: str, title: Optional[str] = None, use_base64: bool = False) -> str:

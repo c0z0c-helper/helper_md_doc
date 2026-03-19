@@ -6,6 +6,23 @@ import subprocess
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
+# 설치명(pip)과 임포트명이 다른 패키지 매핑
+_IMPORT_NAME_MAP: dict = {
+    "Pillow": "PIL",
+    "pillow": "PIL",
+    "scikit-learn": "sklearn",
+    "scikit_learn": "sklearn",
+    "python-dateutil": "dateutil",
+    "python_dateutil": "dateutil",
+    "opencv-python": "cv2",
+    "opencv_python": "cv2",
+    "beautifulsoup4": "bs4",
+    "beautifulsoup4": "bs4",
+    "pyyaml": "yaml",
+    "PyYAML": "yaml",
+}
+
+
 def read_requirements(req_file: str = "requirements.txt") -> list:
     """requirements.txt에서 패키지 목록 읽기
 
@@ -32,7 +49,8 @@ def read_requirements(req_file: str = "requirements.txt") -> list:
                         .strip()
                     )
                     if pkg_name:
-                        packages.append(pkg_name)
+                        # 임포트명이 다른 경우 매핑된 이름 사용
+                        packages.append(_IMPORT_NAME_MAP.get(pkg_name, pkg_name))
 
     return packages
 
