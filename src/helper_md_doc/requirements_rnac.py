@@ -268,7 +268,7 @@ def install_d2coding() -> None:
         sys.exit(1)
 
     if is_d2coding_installed():
-        logging.info("D2Coding 폰트가 이미 설치되어 있습니다.")
+        logging.debug("D2Coding 폰트가 이미 설치되어 있습니다.")
         return
 
     font_dir = _get_font_install_path()
