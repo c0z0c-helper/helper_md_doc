@@ -3,6 +3,7 @@
 
 import argparse
 import base64
+import html
 import os
 import re
 import sys
@@ -43,13 +44,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{title}</title>
   <style>
-    body {{{{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; line-height: 1.6; padding: 2rem; max-width: 900px; margin: auto; }}}}
-    pre {{{{ background: #f6f8fa; padding: 1rem; overflow: auto; border-radius: 6px; }}}}
-    code {{{{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 8px; }}}}
-    table {{{{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}}}
-    th, td {{{{ border: 1px solid #ddd; padding: 0.5rem; text-align: left; }}}}
-    th {{{{ background: #f6f8fa; font-weight: 600; }}}}
-    .mermaid {{{{ margin: 1rem 0; }}}}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; line-height: 1.6; padding: 2rem; max-width: 900px; margin: auto; }}
+        pre {{ background: #f6f8fa; padding: 1rem; overflow: auto; border-radius: 6px; }}
+        code {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 8px; }}
+        table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}
+        th, td {{ border: 1px solid #ddd; padding: 0.5rem; text-align: left; }}
+        th {{ background: #f6f8fa; font-weight: 600; }}
+        .mermaid {{ margin: 1rem 0; }}
   </style>
   {scripts}
 </head>
@@ -146,7 +147,9 @@ def sanitize_mermaid_code(mermaid_code: str) -> str:
     return mermaid_code
 
 
-def _crop_whitespace(png_bytes: bytes, padding: int = 2, tolerance: int = 10, dpi: int = 0) -> bytes:
+def _crop_whitespace(
+    png_bytes: bytes, padding: int = 2, tolerance: int = 10, dpi: int = 0
+) -> bytes:
     """PNG bytes에서 가장자리 픽셀 기반으로 배경색을 자동 감지하여 여백을 제거
 
     4개 코너의 3x3 영역 평균값을 배경색으로 추정하고,
@@ -174,10 +177,10 @@ def _crop_whitespace(png_bytes: bytes, padding: int = 2, tolerance: int = 10, dp
     corner_size = min(3, w, h)
     sample_pixels: List[Tuple[int, int, int]] = []
     regions = [
-        (0, 0, corner_size, corner_size),                   # top-left
-        (w - corner_size, 0, w, corner_size),               # top-right
-        (0, h - corner_size, corner_size, h),               # bottom-left
-        (w - corner_size, h - corner_size, w, h),           # bottom-right
+        (0, 0, corner_size, corner_size),  # top-left
+        (w - corner_size, 0, w, corner_size),  # top-right
+        (0, h - corner_size, corner_size, h),  # bottom-left
+        (w - corner_size, h - corner_size, w, h),  # bottom-right
     ]
     for region in regions:
         patch = rgb.crop(region)
@@ -637,7 +640,9 @@ def normalize_markdown_spacing(md_text: str) -> str:
 
             # 현재 라인이 리스트 항목이면 삽입 안함 (리스트 중간 끊김 방지)
             # 단, 수평선(---)은 예외: 뒤에 오는 라인과 구분이 필요
-            if is_list_or_special_line(line) and not re.match(r"^(-{3,}|\*{3,}|_{3,})\s*$", line.lstrip()):
+            if is_list_or_special_line(line) and not re.match(
+                r"^(-{3,}|\*{3,}|_{3,})\s*$", line.lstrip()
+            ):
                 continue
 
             # 다음 라인이 리스트나 특수 라인으로 시작하는 경우에만 <p/> 삽입
@@ -666,7 +671,7 @@ def md_to_html(md_text: str, title: Optional[str] = None, use_base64: bool = Fal
     """
     if title is None:
         h1_match = re.search(r"^#\s+(.+)$", md_text, re.MULTILINE)
-        title = h1_match.group(1).strip() if h1_match else "Document"
+        title = h1_match.group(1).strip() if h1_match else "Untitled"
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.join(base_dir, "..")
@@ -682,8 +687,14 @@ def md_to_html(md_text: str, title: Optional[str] = None, use_base64: bool = Fal
     # Markdown 리스트 정규화
     md_text = normalize_markdown_spacing(md_text)
 
-    extensions = ["fenced_code", "tables", "toc"]
+    extensions = ["fenced_code", "tables"]
     html_body = markdown.markdown(md_text, extensions=extensions, output_format="html")
+    html_body = re.sub(
+        r"(<pre><code[^>]*>)(.*?)(</code></pre>)",
+        lambda match: f"{match.group(1)}{html.unescape(match.group(2)).replace('<', '&lt;').replace('>', '&gt;')}{match.group(3)}",
+        html_body,
+        flags=re.DOTALL,
+    )
 
     scripts = ""
 

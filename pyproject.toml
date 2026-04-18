@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "helper-md-doc"
-version = "0.5.8"
+version = "0.5.9"
 description = "Markdown/HTML을 DOCX로 변환하는 문서 변환 라이브러리 (Mermaid/LaTeX 지원)"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -51,7 +51,9 @@ Issues = "https://github.com/c0z0c-helper/helper_md_doc/issues"
 [project.scripts]
 md2html = "helper_md_doc.helper_md_html:main"
 html2doc = "helper_md_doc.helper_html_doc:main"
+html2pdf = "helper_md_doc.helper_html_pdf:main"
 md2doc = "helper_md_doc.helper_md_doc:main"
+md2pdf = "helper_md_doc.helper_md_pdf:main"
 install_d2coding = "helper_md_doc.requirements_rnac:install_d2coding"
 
 [tool.setuptools]

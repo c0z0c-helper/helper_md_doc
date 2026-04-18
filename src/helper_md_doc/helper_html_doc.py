@@ -30,7 +30,7 @@ import pypandoc
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
-def embed_images_as_base64(html_text: str, base_dir: str) -> str:
+def embed_images_as_base64(html_text: str, base_dir: Optional[str] = None) -> str:
     """
     HTML의 로컬 이미지 경로를 base64 인코딩하여 임베딩.
     Base64로 이미 인코딩된 이미지(data:image/...)는 건드리지 않음.
@@ -55,7 +55,7 @@ def embed_images_as_base64(html_text: str, base_dir: str) -> str:
         if os.path.isabs(img_path):
             full_path = img_path
         else:
-            full_path = os.path.join(base_dir, img_path)
+            full_path = os.path.join(base_dir or "", img_path)
 
         full_path = os.path.normpath(full_path)
 
@@ -97,6 +97,10 @@ def clean_html_for_pandoc(html_text: str) -> str:
     Returns:
         정리된 HTML 텍스트
     """
+    html_text = re.sub(r"<style\b[^>]*>.*?</style>", "", html_text, flags=re.IGNORECASE | re.DOTALL)
+    html_text = re.sub(
+        r"<script\b[^>]*>.*?</script>", "", html_text, flags=re.IGNORECASE | re.DOTALL
+    )
     html_text = re.sub(r"<link[^>]*katex[^>]*>", "", html_text, flags=re.IGNORECASE)
     html_text = re.sub(
         r"<script[^>]*katex[^>]*>.*?</script>", "", html_text, flags=re.IGNORECASE | re.DOTALL
@@ -111,7 +115,12 @@ def clean_html_for_pandoc(html_text: str) -> str:
     def wrap_pre_block(match: re.Match) -> str:
         inner = match.group(1)
         # HTML 엔티티 복원 (pandoc이 plain text로 전달받도록)
-        inner = inner.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"')
+        inner = (
+            inner.replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", '"')
+        )
         # 줄별로 <p> 태그로 감싸기 (빈 줄은 공백 유지)
         lines = inner.split("\n")
         # 마지막 빈 줄 제거

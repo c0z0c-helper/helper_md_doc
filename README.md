@@ -165,3 +165,9 @@ MIT License
 ### v0.5.8(2026-03-21)
 - doc 변환시 기본 폰트 D2Coding 적용
 - D2Coding 폰트 자동 설치
+
+### v0.5.9(2026-04-18)
+
+- HTML → PDF 변환 기능 추가
+- Markdown → PDF 변환 기능 추가
+- `html2pdf`, `md2pdf` CLI 추가

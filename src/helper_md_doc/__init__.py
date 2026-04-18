@@ -24,7 +24,7 @@ Markdown/HTML을 DOCX로 변환하는 문서 변환 라이브러리
     md_to_doc("input.md", "output.docx")
 """
 
-__version__ = "0.5.8"
+__version__ = "0.5.9"
 
 import os
 import sys
@@ -44,12 +44,16 @@ requirements_rnac.check_and_print_dependencies()
 
 from helper_md_doc.helper_md_html import md_to_html
 from helper_md_doc.helper_html_doc import html_to_doc, clean_html_for_pandoc, embed_images_as_base64
+from helper_md_doc.helper_html_pdf import html_to_pdf
 from helper_md_doc.helper_md_doc import md_to_doc
+from helper_md_doc.helper_md_pdf import md_to_pdf
 
 __all__ = [
     "md_to_html",
     "html_to_doc",
+    "html_to_pdf",
     "md_to_doc",
+    "md_to_pdf",
     "clean_html_for_pandoc",
     "embed_images_as_base64",
     "__version__",
