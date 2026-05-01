@@ -8,10 +8,19 @@ helper-md-doc PyPI 업로드 스크립트
     --test: TestPyPI에 업로드 (기본값: PyPI)
 """
 
+import os
 import subprocess
 import sys
 import shutil
 from pathlib import Path
+
+# Windows cp949 터미널에서 twine/rich의 유니코드 출력 오류 방지
+os.environ.setdefault("PYTHONUTF8", "1")
+if sys.platform == "win32":
+    import io
+
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 
 def clean_build():
@@ -52,7 +61,9 @@ def upload_package(test_mode=False):
         cmd.extend(["--repository", "testpypi"])
     cmd.append("dist/*")
 
-    result = subprocess.run(cmd)
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    result = subprocess.run(cmd, env=env)
 
     if result.returncode != 0:
         print(f"{repo_name} 업로드 실패")
