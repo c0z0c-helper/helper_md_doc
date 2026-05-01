@@ -16,11 +16,7 @@ from pathlib import Path
 
 # Windows cp949 터미널에서 twine/rich의 유니코드 출력 오류 방지
 os.environ.setdefault("PYTHONUTF8", "1")
-if sys.platform == "win32":
-    import io
-
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
 
 def clean_build():
@@ -63,6 +59,14 @@ def upload_package(test_mode=False):
 
     env = os.environ.copy()
     env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+    # NO_COLOR=1: rich의 유니코드 진행 표시 비활성화 → cp949 UnicodeEncodeError 방지
+    env["NO_COLOR"] = "1"
+
+    if sys.platform == "win32":
+        # 콘솔 코드페이지를 UTF-8(65001)로 변경 (chcp 65001)
+        subprocess.run(["chcp", "65001"], shell=True, capture_output=True)
+
     result = subprocess.run(cmd, env=env)
 
     if result.returncode != 0:
