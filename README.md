@@ -226,7 +226,7 @@ MIT License
 - Markdown → PDF 변환 기능 추가
 - `html2pdf`, `md2pdf` CLI 추가
 
-### v0.5.10(2026-05-01)
+### v0.5.11(2026-05-01)
 
 - `math_mode` 기본값 변경: `omml` → `mathml` (세부 튜닝 가능, 품질 향상)
 - 역방향 변환 기능 추가

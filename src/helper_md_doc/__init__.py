@@ -39,7 +39,7 @@ Markdown/HTML/DOCX 문서 변환 라이브러리
     md_to_text("input.md", "output.txt")
 """
 
-__version__ = "0.5.10"
+__version__ = "0.5.11"
 
 import os
 import sys
