@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import re
 import sys
 import logging
 import subprocess
@@ -37,7 +38,7 @@ def md_to_doc(
     output_path: str,
     title: Optional[str] = None,
     reference_doc: Optional[str] = None,
-    math_mode: str = "omml",
+    math_mode: str = "mathml",
 ) -> None:
     """Markdown 파일을 DOCX로 변환
 
@@ -47,8 +48,8 @@ def md_to_doc(
         title: HTML 문서 제목 (None일 경우 첫 번째 # 헤더 사용)
         reference_doc: 사용자 지정 reference.docx 경로 (None이면 기본값 사용)
         math_mode: 수식 처리 방식
-            - "omml"  : Pandoc md→docx 직접 변환 (수식 네이티브 OMML, 기본)
-            - "mathml": LaTeX→MathML HTML 삽입 후 html→docx (Pandoc MathML→OMML)
+            - "mathml": LaTeX→MathML HTML 삽입 후 html→docx (Pandoc MathML→OMML, 기본)
+            - "omml"  : Pandoc md→docx 직접 변환 (수식 네이티브 OMML, 세부 튜닝 불가)
             - "image" : LaTeX→KaTeX PNG 이미지 후 html→docx
     """
     logging.info(f"Markdown 읽기: {md_path}")
@@ -64,8 +65,12 @@ def md_to_doc(
         logging.debug("Mermaid 다이어그램 렌더링 중 (omml 모드)...")
         with tempfile.TemporaryDirectory() as tmpdir:
             md_processed = replace_mermaid_with_images(md_text, tmpdir, use_base64=False)
-            # Windows 경로 구분자 정리 (pandoc 호환)
-            md_processed = md_processed.replace("\\", "/")
+            # img src 경로의 Windows 구분자만 / 로 변환 (LaTeX 백슬래시 보존)
+            md_processed = re.sub(
+                r'(<img\s[^>]*src=")([^"]+)(")',
+                lambda m: m.group(1) + m.group(2).replace("\\", "/") + m.group(3),
+                md_processed,
+            )
 
             tmp_md = os.path.join(tmpdir, "input.md")
             with open(tmp_md, "w", encoding="utf-8") as f:
@@ -107,8 +112,8 @@ def main():
     parser.add_argument(
         "--math-mode",
         choices=["omml", "mathml", "image"],
-        default="omml",
-        help="수식 처리 방식: omml=Pandoc 네이티브 OMML(기본), mathml=MathML→OMML, image=KaTeX PNG",
+        default="mathml",
+        help="수식 처리 방식: mathml=MathML→OMML(기본), omml=Pandoc 네이티브 OMML(세부 튜닝 불가), image=KaTeX PNG",
     )
     args = parser.parse_args()
 

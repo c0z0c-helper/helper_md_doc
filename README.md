@@ -83,7 +83,28 @@ from helper_md_doc import md_to_doc
 md_to_doc("input.md", "output.docx", title="문서 제목")
 ```
 
-### 4. CLI 사용
+### 4. 역방향 변환
+
+```python
+from helper_md_doc import doc_to_html, html_to_md, md_to_text
+
+# DOCX → HTML (이미지 base64 임베딩)
+doc_to_html("input.docx", "output.html")
+
+# HTML → Markdown
+html_to_md("input.html", "output.md")
+
+# HTML → GitHub Flavored Markdown
+html_to_md("input.html", "output.md", md_variant="gfm")
+
+# Markdown → 순수 텍스트 (수식 제거)
+md_to_text("input.md", "output.txt")
+
+# Markdown → 순수 텍스트 (수식 원문 유지)
+md_to_text("input.md", "output.txt", keep_math=True)
+```
+
+### 5. CLI 사용
 
 ```bash
 # Markdown → HTML
@@ -94,6 +115,30 @@ html2doc input.html -o output.docx
 
 # Markdown → DOCX
 md2doc input.md -o output.docx --title "문서 제목"
+
+# Markdown → PDF
+md2pdf input.md -o output.pdf
+
+# HTML → PDF
+html2pdf input.html -o output.pdf
+
+# DOCX → HTML (역변환)
+doc2html input.docx -o output.html
+
+# DOCX → HTML (이미지 별도 파일)
+doc2html input.docx --no-embed
+
+# HTML → Markdown (역변환)
+html2md input.html -o output.md
+
+# HTML → GitHub Flavored Markdown
+html2md input.html --variant gfm
+
+# Markdown → 순수 텍스트 (역변환)
+md2text input.md -o output.txt
+
+# Markdown → 순수 텍스트 (수식 원문 유지)
+md2text input.md --keep-math
 ```
 
 또는 모듈로 실행:
@@ -107,6 +152,15 @@ python -m helper_md_doc.helper_html_doc input.html -o output.docx
 
 # Markdown → DOCX
 python -m helper_md_doc.helper_md_doc input.md -o output.docx --title "문서 제목"
+
+# DOCX → HTML (역변환)
+python -m helper_md_doc.helper_doc_html input.docx -o output.html
+
+# HTML → Markdown (역변환)
+python -m helper_md_doc.helper_html_md input.html -o output.md
+
+# Markdown → 순수 텍스트 (역변환)
+python -m helper_md_doc.helper_md_text input.md -o output.txt
 ```
 
 ## 의존성
@@ -171,3 +225,13 @@ MIT License
 - HTML → PDF 변환 기능 추가
 - Markdown → PDF 변환 기능 추가
 - `html2pdf`, `md2pdf` CLI 추가
+
+### v0.5.10(2026-05-01)
+
+- `math_mode` 기본값 변경: `omml` → `mathml` (세부 튜닝 가능, 품질 향상)
+- 역방향 변환 기능 추가
+  - DOCX → HTML 변환 (`doc_to_html`, `doc2html` CLI)
+  - HTML → Markdown 변환 (`html_to_md`, `html2md` CLI)
+  - Markdown → 순수 텍스트 변환 (`md_to_text`, `md2text` CLI)
+
+

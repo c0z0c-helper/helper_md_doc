@@ -54,6 +54,9 @@ html2doc = "helper_md_doc.helper_html_doc:main"
 html2pdf = "helper_md_doc.helper_html_pdf:main"
 md2doc = "helper_md_doc.helper_md_doc:main"
 md2pdf = "helper_md_doc.helper_md_pdf:main"
+doc2html = "helper_md_doc.helper_doc_html:main"
+html2md = "helper_md_doc.helper_html_md:main"
+md2text = "helper_md_doc.helper_md_text:main"
 install_d2coding = "helper_md_doc.requirements_rnac:install_d2coding"
 
 [tool.setuptools]
