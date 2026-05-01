@@ -163,13 +163,14 @@ def clean_html_for_pandoc(html_text: str) -> str:
 _REFERENCE_DOCX = os.path.join(os.path.dirname(__file__), "reference.docx")
 
 
-def html_to_doc(html_path: str, output_path: str) -> None:
+def html_to_doc(html_path: str, output_path: str, reference_doc: Optional[str] = None) -> None:
     """
     HTML 파일을 DOCX로 변환 (이미지/수식 임베딩).
 
     Args:
         html_path: 입력 HTML 파일 경로
         output_path: 출력 DOCX 파일 경로
+        reference_doc: 사용자 지정 reference.docx 경로 (None이면 기본값 사용)
     """
     logging.info(f"HTML 읽기: {html_path}")
     with open(html_path, "r", encoding="utf-8") as f:
@@ -184,9 +185,10 @@ def html_to_doc(html_path: str, output_path: str) -> None:
     html_text = clean_html_for_pandoc(html_text)
 
     logging.debug("DOCX 변환 중...")
+    ref_doc = reference_doc or _REFERENCE_DOCX
     extra_args = ["--standalone"]
-    if os.path.isfile(_REFERENCE_DOCX):
-        extra_args.append(f"--reference-doc={_REFERENCE_DOCX}")
+    if os.path.isfile(ref_doc):
+        extra_args.append(f"--reference-doc={ref_doc}")
     pypandoc.convert_text(
         html_text, "docx", format="html", outputfile=output_path, extra_args=extra_args
     )

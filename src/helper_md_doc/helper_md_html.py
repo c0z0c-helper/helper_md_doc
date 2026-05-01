@@ -584,6 +584,39 @@ def replace_latex_with_images(
     return md_text
 
 
+def replace_latex_with_mathml(md_text: str) -> str:
+    """Markdown의 LaTeX 수식을 MathML HTML 태그로 변환 (pandoc의 MathML→OMML 변환 활용)
+
+    Args:
+        md_text: Markdown 텍스트
+
+    Returns:
+        LaTeX 수식이 MathML 태그로 치환된 Markdown
+    """
+    import latex2mathml.converter
+
+    def replace_display_math(match):
+        """블록 수식 $$...$$ → MathML (display block)"""
+        latex_code = match.group(1).strip()
+        if is_simple_text(latex_code):
+            return f'<div style="text-align: center; margin: 1rem 0; font-weight: bold;">{latex_code}</div>'
+        mathml = latex2mathml.converter.convert(latex_code, display="block")
+        return f'<div style="text-align: center; margin: 1rem 0;">{mathml}</div>'
+
+    def replace_inline_math(match):
+        """인라인 수식 $...$ → MathML (inline)"""
+        latex_code = match.group(1).strip()
+        if is_simple_text(latex_code):
+            return f"<code>{latex_code}</code>"
+        mathml = latex2mathml.converter.convert(latex_code, display="inline")
+        return mathml
+
+    md_text = re.sub(r"\$\$(.*?)\$\$", replace_display_math, md_text, flags=re.DOTALL)
+    md_text = re.sub(r"(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)", replace_inline_math, md_text)
+
+    return md_text
+
+
 def is_list_or_special_line(line: str) -> bool:
     """라인이 리스트 항목이나 특수 패턴으로 시작하는지 확인
 
@@ -658,13 +691,21 @@ def normalize_markdown_spacing(md_text: str) -> str:
     return result
 
 
-def md_to_html(md_text: str, title: Optional[str] = None, use_base64: bool = False) -> str:
-    """Markdown을 HTML로 변환하고 Mermaid/LaTeX를 PNG 이미지로 렌더링
+def md_to_html(
+    md_text: str,
+    title: Optional[str] = None,
+    use_base64: bool = False,
+    math_mode: str = "image",
+) -> str:
+    """Markdown을 HTML로 변환하고 Mermaid/LaTeX를 처리
 
     Args:
         md_text: Markdown 텍스트
         title: HTML 문서 제목 (None일 경우 첫 번째 # 헤더 사용)
         use_base64: True면 이미지를 Base64로 인코딩하여 HTML에 임베드
+        math_mode: 수식 처리 방식
+            - "image" : LaTeX → KaTeX PNG 이미지 (기본)
+            - "mathml": LaTeX → MathML HTML 태그 (pandoc이 OMML로 변환)
 
     Returns:
         완성된 HTML 문자열
@@ -680,9 +721,12 @@ def md_to_html(md_text: str, title: Optional[str] = None, use_base64: bool = Fal
     mermaid_dir = os.path.join(parent_dir, "mermaid_diagrams")
     md_text = replace_mermaid_with_images(md_text, mermaid_dir, use_base64)
 
-    # LaTeX 수식을 이미지로 변환
+    # LaTeX 수식 처리 (math_mode에 따라 분기)
     latex_dir = os.path.join(parent_dir, "latex_equations")
-    md_text = replace_latex_with_images(md_text, latex_dir, use_base64)
+    if math_mode == "mathml":
+        md_text = replace_latex_with_mathml(md_text)
+    else:  # "image"
+        md_text = replace_latex_with_images(md_text, latex_dir, use_base64)
 
     # Markdown 리스트 정규화
     md_text = normalize_markdown_spacing(md_text)
@@ -703,13 +747,19 @@ def md_to_html(md_text: str, title: Optional[str] = None, use_base64: bool = Fal
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Markdown(.md)을 HTML로 변환하고 Mermaid/LaTeX 수식을 PNG 이미지로 렌더링합니다."
+        description="Markdown(.md)을 HTML로 변환하고 Mermaid/LaTeX 수식을 처리합니다."
     )
     parser.add_argument("input", help="입력 Markdown 파일 경로 (.md)")
     parser.add_argument("-o", "--output", help="출력 HTML 파일 경로 (.html)")
     parser.add_argument("--title", default=None, help="HTML 문서 제목")
     parser.add_argument(
         "--base64", action="store_true", help="PNG 이미지를 Base64로 인코딩하여 HTML에 임베드"
+    )
+    parser.add_argument(
+        "--math-mode",
+        choices=["image", "mathml"],
+        default="image",
+        help="수식 처리 방식: image=KaTeX PNG(기본), mathml=MathML 태그",
     )
     args = parser.parse_args()
 
@@ -722,7 +772,7 @@ def main():
         md_text = f.read()
 
     title = args.title or os.path.splitext(os.path.basename(in_path))[0]
-    html = md_to_html(md_text, title=title, use_base64=args.base64)
+    html = md_to_html(md_text, title=title, use_base64=args.base64, math_mode=args.math_mode)
 
     out_path = args.output or os.path.splitext(in_path)[0] + ".html"
     with open(out_path, "w", encoding="utf-8") as f:
