@@ -24,14 +24,47 @@ _IMPORT_NAME_MAP: dict = {
 
 
 def read_requirements(req_file: str = "requirements.txt") -> list:
-    """requirements.txt에서 패키지 목록 읽기
+    """패키지 의존성 목록 읽기
+
+    우선순위:
+        1. importlib.metadata: pip 설치 환경에서 pyproject.toml의 dependencies 사용
+        2. requirements.txt: 소스 개발 환경 fallback
 
     Args:
-        req_file: requirements.txt 파일 경로
+        req_file: requirements.txt 파일 경로 (fallback용)
 
     Returns:
-        패키지 목록 (주석, 빈 줄 제외)
+        패키지 목록 (임포트명 기준)
     """
+    # 1. pip 설치 환경: pyproject.toml dependencies 참조
+    try:
+        from importlib.metadata import requires, PackageNotFoundError
+        try:
+            deps = requires("helper-md-doc") or []
+            packages = []
+            for dep in deps:
+                # "latex2mathml>=3.0.0", "Pillow>=10.0.0 ; extra == 'dev'" 등
+                if "; extra ==" in dep:
+                    continue
+                pkg_name = (
+                    dep.split(">=")[0]
+                    .split("==")[0]
+                    .split("<=")[0]
+                    .split(">")[0]
+                    .split("<")[0]
+                    .split(";")[0]
+                    .strip()
+                )
+                if pkg_name:
+                    packages.append(_IMPORT_NAME_MAP.get(pkg_name, pkg_name))
+            if packages:
+                return packages
+        except PackageNotFoundError:
+            pass
+    except ImportError:
+        pass
+
+    # 2. 소스 개발 환경 fallback: requirements.txt 직접 읽기
     req_path = os.path.join(os.path.dirname(__file__), "..", "..", req_file)
     packages = []
 
@@ -49,8 +82,8 @@ def read_requirements(req_file: str = "requirements.txt") -> list:
                         .strip()
                     )
                     if pkg_name:
-                        # 임포트명이 다른 경우 매핑된 이름 사용
-                        packages.append(_IMPORT_NAME_MAP.get(pkg_name, pkg_name))
+                        packages.append(
+                            _IMPORT_NAME_MAP.get(pkg_name, pkg_name))
 
     return packages
 
@@ -73,7 +106,8 @@ def install_playwright_browsers() -> None:
 def install_requirements():
     """requirements.txt의 라이브러리 자동 설치"""
     try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
     except subprocess.CalledProcessError as e:
         logging.error(f"종속성 설치 실패: {e}")
         sys.exit(1)
@@ -164,7 +198,8 @@ def check_and_install_dependencies() -> None:
             logging.info("각 패키지별로 설치 여부를 확인합니다...")
             playwright_installed = False
             for pkg in missing_packages:
-                user_input = input(f"'{pkg}' 설치하시겠습니까? (y/n): ").strip().lower()
+                user_input = input(
+                    f"'{pkg}' 설치하시겠습니까? (y/n): ").strip().lower()
                 if user_input == "y":
                     try:
                         subprocess.check_call(
@@ -240,7 +275,8 @@ def _get_font_install_path() -> str:
 def is_d2coding_installed() -> bool:
     """D2Coding 폰트 설치 여부 확인"""
     if sys.platform == "win32":
-        system_font = os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "Fonts", "D2Coding.ttc")
+        system_font = os.path.join(os.environ.get(
+            "SystemRoot", "C:\\Windows"), "Fonts", "D2Coding.ttc")
         user_font = os.path.join(_get_font_install_path(), "D2Coding.ttc")
         return os.path.isfile(system_font) or os.path.isfile(user_font)
     elif sys.platform == "darwin":
@@ -249,7 +285,8 @@ def is_d2coding_installed() -> bool:
         return os.path.isfile(system_font) or os.path.isfile(user_font)
     else:
         user_font = os.path.join(_get_font_install_path(), "D2Coding.ttc")
-        system_fonts = ["/usr/share/fonts/D2Coding.ttc", "/usr/local/share/fonts/D2Coding.ttc"]
+        system_fonts = ["/usr/share/fonts/D2Coding.ttc",
+                        "/usr/local/share/fonts/D2Coding.ttc"]
         return os.path.isfile(user_font) or any(os.path.isfile(p) for p in system_fonts)
 
 
@@ -264,7 +301,8 @@ def install_d2coding() -> None:
     import shutil
 
     if not os.path.isfile(_D2CODING_FONT_FILE):
-        logging.error(f"패키지 내 D2Coding.ttc 파일을 찾을 수 없습니다: {_D2CODING_FONT_FILE}")
+        logging.error(
+            f"패키지 내 D2Coding.ttc 파일을 찾을 수 없습니다: {_D2CODING_FONT_FILE}")
         sys.exit(1)
 
     if is_d2coding_installed():
