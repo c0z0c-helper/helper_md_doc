@@ -234,4 +234,7 @@ MIT License
   - HTML → Markdown 변환 (`html_to_md`, `html2md` CLI)
   - Markdown → 순수 텍스트 변환 (`md_to_text`, `md2text` CLI)
 
+### v0.5.12(2026-05-09)
 
+- HTML → PDF 변환 기능 개선
+- Markdown → PDF 변환 기능 개선

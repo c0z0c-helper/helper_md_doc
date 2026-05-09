@@ -39,7 +39,15 @@ Markdown/HTML/DOCX 문서 변환 라이브러리
     md_to_text("input.md", "output.txt")
 """
 
-__version__ = "0.5.11"
+from helper_md_doc.helper_md_text import md_to_text
+from helper_md_doc.helper_html_md import html_to_md
+from helper_md_doc.helper_doc_html import doc_to_html
+from helper_md_doc.helper_md_pdf import md_to_pdf
+from helper_md_doc.helper_md_doc import md_to_doc
+from helper_md_doc.helper_html_pdf import html_to_pdf
+from helper_md_doc.helper_html_doc import html_to_doc, clean_html_for_pandoc, embed_images_as_base64
+from helper_md_doc.helper_md_html import md_to_html
+__version__ = "0.5.12"
 
 import os
 import sys
@@ -51,20 +59,13 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 spec = importlib.util.spec_from_file_location(
-    "requirements_rnac", os.path.join(os.path.dirname(__file__), "requirements_rnac.py")
+    "requirements_rnac", os.path.join(
+        os.path.dirname(__file__), "requirements_rnac.py")
 )
 requirements_rnac = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(requirements_rnac)
 requirements_rnac.check_and_print_dependencies()
 
-from helper_md_doc.helper_md_html import md_to_html
-from helper_md_doc.helper_html_doc import html_to_doc, clean_html_for_pandoc, embed_images_as_base64
-from helper_md_doc.helper_html_pdf import html_to_pdf
-from helper_md_doc.helper_md_doc import md_to_doc
-from helper_md_doc.helper_md_pdf import md_to_pdf
-from helper_md_doc.helper_doc_html import doc_to_html
-from helper_md_doc.helper_html_md import html_to_md
-from helper_md_doc.helper_md_text import md_to_text
 
 __all__ = [
     # 순방향
