@@ -47,7 +47,7 @@ from helper_md_doc.helper_md_doc import md_to_doc
 from helper_md_doc.helper_html_pdf import html_to_pdf
 from helper_md_doc.helper_html_doc import html_to_doc, clean_html_for_pandoc, embed_images_as_base64
 from helper_md_doc.helper_md_html import md_to_html
-__version__ = "0.5.13"
+__version__ = "0.5.14"
 
 import os
 import sys
