@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import pypandoc
+import importlib.util
 import argparse
 import os
 import re
@@ -13,23 +15,27 @@ _project_root = Path(__file__).resolve().parents[1]
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
-import importlib.util
 
-spec = importlib.util.spec_from_file_location(
-    "requirements_rnac", os.path.join(os.path.dirname(__file__), "requirements_rnac.py")
-)
-requirements_rnac = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(requirements_rnac)
-requirements_rnac.check_and_install_dependencies()
+if getattr(sys, "frozen", False):
+    from helper_md_doc import requirements_rnac
+    requirements_rnac.check_and_install_dependencies()
+else:
+    spec = importlib.util.spec_from_file_location(
+        "requirements_rnac", os.path.join(
+            os.path.dirname(__file__), "requirements_rnac.py")
+    )
+    requirements_rnac = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(requirements_rnac)
+    requirements_rnac.check_and_install_dependencies()
 
-import pypandoc
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
 def _clean_html_for_md(html_text: str) -> str:
     """Markdown 변환 전 HTML 정리: script/style 제거"""
-    html_text = re.sub(r"<style\b[^>]*>.*?</style>", "", html_text, flags=re.IGNORECASE | re.DOTALL)
+    html_text = re.sub(r"<style\b[^>]*>.*?</style>",
+                       "", html_text, flags=re.IGNORECASE | re.DOTALL)
     html_text = re.sub(
         r"<script\b[^>]*>.*?</script>", "", html_text, flags=re.IGNORECASE | re.DOTALL
     )
@@ -86,7 +92,8 @@ def html_to_md(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="HTML(.html)을 Markdown으로 변환합니다.")
+    parser = argparse.ArgumentParser(
+        description="HTML(.html)을 Markdown으로 변환합니다.")
     parser.add_argument("input", help="입력 HTML 파일 경로 (.html)")
     parser.add_argument("-o", "--output", help="출력 Markdown 파일 경로 (.md)")
     parser.add_argument(

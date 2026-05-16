@@ -146,6 +146,11 @@ def check_and_install_dependencies() -> None:
         n: 건너뛰기 (설치 안 함)
         c: 취소 (프로그램 종료)
     """
+    # PyInstaller frozen 실행 파일에서는 의존성이 이미 번들되어 있으므로 건너뜀
+    if getattr(sys, "frozen", False):
+        install_d2coding()
+        return
+
     required_packages = read_requirements()
     missing_packages = []
 

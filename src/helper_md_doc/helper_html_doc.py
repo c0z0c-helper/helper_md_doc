@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import pypandoc
+import importlib.util
 import argparse
 import base64
 import os
@@ -16,16 +18,19 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 # 의존성 확인 및 설치
-import importlib.util
 
-spec = importlib.util.spec_from_file_location(
-    "requirements_rnac", os.path.join(os.path.dirname(__file__), "requirements_rnac.py")
-)
-requirements_rnac = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(requirements_rnac)
-requirements_rnac.check_and_install_dependencies()
+if getattr(sys, "frozen", False):
+    from helper_md_doc import requirements_rnac
+    requirements_rnac.check_and_install_dependencies()
+else:
+    spec = importlib.util.spec_from_file_location(
+        "requirements_rnac", os.path.join(
+            os.path.dirname(__file__), "requirements_rnac.py")
+    )
+    requirements_rnac = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(requirements_rnac)
+    requirements_rnac.check_and_install_dependencies()
 
-import pypandoc
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -97,11 +102,13 @@ def clean_html_for_pandoc(html_text: str) -> str:
     Returns:
         정리된 HTML 텍스트
     """
-    html_text = re.sub(r"<style\b[^>]*>.*?</style>", "", html_text, flags=re.IGNORECASE | re.DOTALL)
+    html_text = re.sub(r"<style\b[^>]*>.*?</style>",
+                       "", html_text, flags=re.IGNORECASE | re.DOTALL)
     html_text = re.sub(
         r"<script\b[^>]*>.*?</script>", "", html_text, flags=re.IGNORECASE | re.DOTALL
     )
-    html_text = re.sub(r"<link[^>]*katex[^>]*>", "", html_text, flags=re.IGNORECASE)
+    html_text = re.sub(r"<link[^>]*katex[^>]*>", "",
+                       html_text, flags=re.IGNORECASE)
     html_text = re.sub(
         r"<script[^>]*katex[^>]*>.*?</script>", "", html_text, flags=re.IGNORECASE | re.DOTALL
     )
@@ -135,7 +142,8 @@ def clean_html_for_pandoc(html_text: str) -> str:
             stripped = line.lstrip()
             indent = line[: len(line) - len(stripped)]
             # 탭은 4 NBSP, 스페이스는 1 NBSP로 변환
-            nbsp_indent = indent.replace("\t", "&#160;&#160;&#160;&#160;").replace(" ", "&#160;")
+            nbsp_indent = indent.replace(
+                "\t", "&#160;&#160;&#160;&#160;").replace(" ", "&#160;")
             return nbsp_indent + stripped
 
         p_lines = "".join(f"<p>{preserve_indent(line)}</p>" for line in lines)

@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from helper_md_doc.helper_html_doc import clean_html_for_pandoc  # mathml/image 모드에서 사용
+from helper_md_doc.helper_md_html import md_to_html, _cleanup_browser, replace_mermaid_with_images
+import pypandoc
+import importlib.util
 import argparse
 import os
 import re
@@ -17,18 +21,20 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 # 의존성 확인 및 설치
-import importlib.util
 
-spec = importlib.util.spec_from_file_location(
-    "requirements_rnac", os.path.join(os.path.dirname(__file__), "requirements_rnac.py")
-)
-requirements_rnac = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(requirements_rnac)
-requirements_rnac.check_and_install_dependencies()
+if getattr(sys, "frozen", False):
+    # frozen 실행 파일: 패키지가 이미 번들됨, 직접 임포트
+    from helper_md_doc import requirements_rnac
+    requirements_rnac.check_and_install_dependencies()
+else:
+    spec = importlib.util.spec_from_file_location(
+        "requirements_rnac", os.path.join(
+            os.path.dirname(__file__), "requirements_rnac.py")
+    )
+    requirements_rnac = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(requirements_rnac)
+    requirements_rnac.check_and_install_dependencies()
 
-import pypandoc
-from helper_md_doc.helper_md_html import md_to_html, _cleanup_browser, replace_mermaid_with_images
-from helper_md_doc.helper_html_doc import clean_html_for_pandoc  # mathml/image 모드에서 사용
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -64,11 +70,13 @@ def md_to_doc(
         # Mermaid만 PNG 파일로 치환, LaTeX는 pandoc이 직접 OMML로 변환
         logging.debug("Mermaid 다이어그램 렌더링 중 (omml 모드)...")
         with tempfile.TemporaryDirectory() as tmpdir:
-            md_processed = replace_mermaid_with_images(md_text, tmpdir, use_base64=False)
+            md_processed = replace_mermaid_with_images(
+                md_text, tmpdir, use_base64=False)
             # img src 경로의 Windows 구분자만 / 로 변환 (LaTeX 백슬래시 보존)
             md_processed = re.sub(
                 r'(<img\s[^>]*src=")([^"]+)(")',
-                lambda m: m.group(1) + m.group(2).replace("\\", "/") + m.group(3),
+                lambda m: m.group(
+                    1) + m.group(2).replace("\\", "/") + m.group(3),
                 md_processed,
             )
 
@@ -80,11 +88,13 @@ def md_to_doc(
             extra_args = ["--standalone", "--mathml"]
             if os.path.isfile(ref_doc):
                 extra_args.append(f"--reference-doc={ref_doc}")
-            pypandoc.convert_file(tmp_md, "docx", outputfile=output_path, extra_args=extra_args)
+            pypandoc.convert_file(
+                tmp_md, "docx", outputfile=output_path, extra_args=extra_args)
     else:
         # mathml / image 모드: HTML 경유 변환
         logging.debug(f"Markdown → HTML 변환 중 (math_mode={math_mode})...")
-        html_text = md_to_html(md_text, title=title, use_base64=True, math_mode=math_mode)
+        html_text = md_to_html(md_text, title=title,
+                               use_base64=True, math_mode=math_mode)
 
         logging.debug(f"HTML 정리 중 (스크립트 태그 제거)...")
         html_text = clean_html_for_pandoc(html_text)
@@ -108,7 +118,8 @@ def main():
     parser.add_argument("input", help="입력 Markdown 파일 경로 (.md)")
     parser.add_argument("-o", "--output", help="출력 DOCX 파일 경로 (.docx)")
     parser.add_argument("--title", default=None, help="문서 제목")
-    parser.add_argument("--reference-doc", default=None, help="서식 템플릿 reference.docx 경로")
+    parser.add_argument("--reference-doc", default=None,
+                        help="서식 템플릿 reference.docx 경로")
     parser.add_argument(
         "--math-mode",
         choices=["omml", "mathml", "image"],
@@ -125,7 +136,8 @@ def main():
     out_path = args.output or os.path.splitext(in_path)[0] + ".docx"
     title = args.title or os.path.splitext(os.path.basename(in_path))[0]
 
-    md_to_doc(in_path, out_path, title, reference_doc=args.reference_doc, math_mode=args.math_mode)
+    md_to_doc(in_path, out_path, title,
+              reference_doc=args.reference_doc, math_mode=args.math_mode)
 
 
 if __name__ == "__main__":

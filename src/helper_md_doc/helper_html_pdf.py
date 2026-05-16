@@ -17,13 +17,17 @@ _project_root = Path(__file__).resolve().parents[1]
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
-spec = importlib.util.spec_from_file_location(
-    "requirements_rnac", os.path.join(
-        os.path.dirname(__file__), "requirements_rnac.py")
-)
-requirements_rnac = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(requirements_rnac)
-requirements_rnac.check_and_install_dependencies()
+if getattr(sys, "frozen", False):
+    from helper_md_doc import requirements_rnac
+    requirements_rnac.check_and_install_dependencies()
+else:
+    spec = importlib.util.spec_from_file_location(
+        "requirements_rnac", os.path.join(
+            os.path.dirname(__file__), "requirements_rnac.py")
+    )
+    requirements_rnac = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(requirements_rnac)
+    requirements_rnac.check_and_install_dependencies()
 
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")

@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from playwright.sync_api import sync_playwright, Browser, Page
+from PIL import Image, ImageChops
+import markdown
+import io
+import importlib.util
 import argparse
 import base64
 import html
@@ -17,20 +22,20 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 # 의존성 확인 및 설치
-import importlib.util
 
-spec = importlib.util.spec_from_file_location(
-    "requirements_rnac", os.path.join(os.path.dirname(__file__), "requirements_rnac.py")
-)
-requirements_rnac = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(requirements_rnac)
-requirements_rnac.check_and_install_dependencies()
+if getattr(sys, "frozen", False):
+    # frozen 실행 파일: 패키지가 이미 번들됨, 직접 임포트
+    from helper_md_doc import requirements_rnac
+    requirements_rnac.check_and_install_dependencies()
+else:
+    spec = importlib.util.spec_from_file_location(
+        "requirements_rnac", os.path.join(
+            os.path.dirname(__file__), "requirements_rnac.py")
+    )
+    requirements_rnac = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(requirements_rnac)
+    requirements_rnac.check_and_install_dependencies()
 
-import io
-
-import markdown
-from PIL import Image, ImageChops
-from playwright.sync_api import sync_playwright, Browser, Page
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 # body {{{{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; line-height: 1.6; padding: 2rem; max-width: 900px; margin: auto; }}}}
@@ -75,15 +80,19 @@ def _get_browser_page():
         _page = _browser.new_page()
 
         # mermaid.min.js 사전 로드
-        mermaid_js_path = os.path.join(os.path.dirname(__file__), "mermaid/mermaid.js")
+        mermaid_js_path = os.path.join(
+            os.path.dirname(__file__), "mermaid/mermaid.js")
         with open(mermaid_js_path, "r", encoding="utf-8") as f:
             mermaid_js = f.read()
         _page.add_script_tag(content=mermaid_js)
-        _page.evaluate("mermaid.initialize({ startOnLoad: false, theme: 'default' })")
+        _page.evaluate(
+            "mermaid.initialize({ startOnLoad: false, theme: 'default' })")
 
         # katex.min.js 및 CSS 사전 로드
-        katex_js_path = os.path.join(os.path.dirname(__file__), "katex", "katex.js")
-        katex_css_path = os.path.join(os.path.dirname(__file__), "katex", "katex.css")
+        katex_js_path = os.path.join(
+            os.path.dirname(__file__), "katex", "katex.js")
+        katex_css_path = os.path.join(
+            os.path.dirname(__file__), "katex", "katex.css")
         with open(katex_js_path, "r", encoding="utf-8") as f:
             katex_js = f.read()
         with open(katex_css_path, "r", encoding="utf-8") as f:
@@ -128,16 +137,20 @@ def sanitize_mermaid_code(mermaid_code: str) -> str:
 
         # <br/> 및 <br> 태그를 임시 플레이스홀더로 치환 (줄바꿈 태그 보존)
         # 주의: special_chars에 '_'가 있으므로 언더바를 사용하지 않는 플레이스홀더 사용
-        label_content = label_content.replace("<br/>", "\x00PLACEHOLDER\x01BR\x01SLASH\x00")
-        label_content = label_content.replace("<br>", "\x00PLACEHOLDER\x01BR\x00")
+        label_content = label_content.replace(
+            "<br/>", "\x00PLACEHOLDER\x01BR\x01SLASH\x00")
+        label_content = label_content.replace(
+            "<br>", "\x00PLACEHOLDER\x01BR\x00")
 
         # 특수문자 변환
         for ascii_char, fullwidth_char in special_chars.items():
             label_content = label_content.replace(ascii_char, fullwidth_char)
 
         # 플레이스홀더 복원
-        label_content = label_content.replace("\x00PLACEHOLDER\x01BR\x01SLASH\x00", "<br/>")
-        label_content = label_content.replace("\x00PLACEHOLDER\x01BR\x00", "<br>")
+        label_content = label_content.replace(
+            "\x00PLACEHOLDER\x01BR\x01SLASH\x00", "<br/>")
+        label_content = label_content.replace(
+            "\x00PLACEHOLDER\x01BR\x00", "<br>")
 
         return f'["{label_content}"]'
 
@@ -254,7 +267,8 @@ def render_mermaid_to_png(mermaid_code: str, output_path: str) -> str:
         <div class="mermaid">{mermaid_code}</div>
     </div>
     """
-    page.set_content(f"<!DOCTYPE html><html><body>{html_content}</body></html>")
+    page.set_content(
+        f"<!DOCTYPE html><html><body>{html_content}</body></html>")
     # page.evaluate("""async () => {
     #     await mermaid.run({ querySelector: '.mermaid' });
     # }""")
@@ -291,7 +305,8 @@ def render_mermaid_base64(mermaid_code: str) -> str:
         <div class="mermaid">{mermaid_code}</div>
     </div>
     """
-    page.set_content(f"<!DOCTYPE html><html><body>{html_content}</body></html>")
+    page.set_content(
+        f"<!DOCTYPE html><html><body>{html_content}</body></html>")
     # page.evaluate("""async () => {
     #     await mermaid.run({ querySelector: '.mermaid' });
     # }""")
@@ -338,12 +353,14 @@ def render_latex_to_png(latex_code: str, output_path: str, display_mode: bool = 
         container_style = "background: white; padding: 10px; display: inline-block;"
 
         # KaTeX CSS 읽기
-        katex_css_path = os.path.join(os.path.dirname(__file__), "katex", "katex.css")
+        katex_css_path = os.path.join(
+            os.path.dirname(__file__), "katex", "katex.css")
         with open(katex_css_path, "r", encoding="utf-8") as f:
             katex_css = f.read()
 
         # KaTeX JS 읽기
-        katex_js_path = os.path.join(os.path.dirname(__file__), "katex", "katex.js")
+        katex_js_path = os.path.join(
+            os.path.dirname(__file__), "katex", "katex.js")
         with open(katex_js_path, "r", encoding="utf-8") as f:
             katex_js = f.read()
 
@@ -415,11 +432,13 @@ def render_latex_base64(latex_code: str, display_mode: bool = False) -> str:
         latex_json = json.dumps(latex_code)
         container_style = "background: white; padding: 10px; display: inline-block;"
 
-        katex_css_path = os.path.join(os.path.dirname(__file__), "katex", "katex.css")
+        katex_css_path = os.path.join(
+            os.path.dirname(__file__), "katex", "katex.css")
         with open(katex_css_path, "r", encoding="utf-8") as f:
             katex_css = f.read()
 
-        katex_js_path = os.path.join(os.path.dirname(__file__), "katex", "katex.js")
+        katex_js_path = os.path.join(
+            os.path.dirname(__file__), "katex", "katex.js")
         with open(katex_js_path, "r", encoding="utf-8") as f:
             katex_js = f.read()
 
@@ -578,8 +597,10 @@ def replace_latex_with_images(
 
         return f'<img src="{img_src}" alt="Equation {equation_count[0]}" style="display: inline-block; vertical-align: middle;" />'
 
-    md_text = re.sub(r"\$\$(.*?)\$\$", replace_display_math, md_text, flags=re.DOTALL)
-    md_text = re.sub(r"(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)", replace_inline_math, md_text)
+    md_text = re.sub(r"\$\$(.*?)\$\$", replace_display_math,
+                     md_text, flags=re.DOTALL)
+    md_text = re.sub(r"(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)",
+                     replace_inline_math, md_text)
 
     return md_text
 
@@ -611,8 +632,10 @@ def replace_latex_with_mathml(md_text: str) -> str:
         mathml = latex2mathml.converter.convert(latex_code, display="inline")
         return mathml
 
-    md_text = re.sub(r"\$\$(.*?)\$\$", replace_display_math, md_text, flags=re.DOTALL)
-    md_text = re.sub(r"(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)", replace_inline_math, md_text)
+    md_text = re.sub(r"\$\$(.*?)\$\$", replace_display_math,
+                     md_text, flags=re.DOTALL)
+    md_text = re.sub(r"(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)",
+                     replace_inline_math, md_text)
 
     return md_text
 
@@ -732,7 +755,8 @@ def md_to_html(
     md_text = normalize_markdown_spacing(md_text)
 
     extensions = ["fenced_code", "tables"]
-    html_body = markdown.markdown(md_text, extensions=extensions, output_format="html")
+    html_body = markdown.markdown(
+        md_text, extensions=extensions, output_format="html")
     html_body = re.sub(
         r"(<pre><code[^>]*>)(.*?)(</code></pre>)",
         lambda match: f"{match.group(1)}{html.unescape(match.group(2)).replace('<', '&lt;').replace('>', '&gt;')}{match.group(3)}",
@@ -772,7 +796,8 @@ def main():
         md_text = f.read()
 
     title = args.title or os.path.splitext(os.path.basename(in_path))[0]
-    html = md_to_html(md_text, title=title, use_base64=args.base64, math_mode=args.math_mode)
+    html = md_to_html(md_text, title=title,
+                      use_base64=args.base64, math_mode=args.math_mode)
 
     out_path = args.output or os.path.splitext(in_path)[0] + ".html"
     with open(out_path, "w", encoding="utf-8") as f:
