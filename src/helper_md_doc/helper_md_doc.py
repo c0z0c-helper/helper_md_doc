@@ -22,6 +22,7 @@ if str(_project_root) not in sys.path:
 
 # 의존성 확인 및 설치
 
+<<<<<<< HEAD
 if getattr(sys, "frozen", False):
     # frozen 실행 파일: 패키지가 이미 번들됨, 직접 임포트
     from helper_md_doc import requirements_rnac
@@ -34,6 +35,15 @@ else:
     requirements_rnac = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(requirements_rnac)
     requirements_rnac.check_and_install_dependencies()
+=======
+spec = importlib.util.spec_from_file_location(
+    "requirements_rnac", os.path.join(
+        os.path.dirname(__file__), "requirements_rnac.py")
+)
+requirements_rnac = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(requirements_rnac)
+requirements_rnac.check_and_install_dependencies()
+>>>>>>> master
 
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -106,6 +116,10 @@ def md_to_doc(
         pypandoc.convert_text(
             html_text, "docx", format="html", outputfile=output_path, extra_args=extra_args
         )
+
+        logging.debug("overline 수식 교정 중...")
+        from helper_md_doc.helper_html_doc import fix_overline_in_docx
+        fix_overline_in_docx(output_path)
 
     _cleanup_browser()
     logging.info(f"변환 완료: {output_path}")

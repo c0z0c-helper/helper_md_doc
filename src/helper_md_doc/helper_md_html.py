@@ -23,6 +23,7 @@ if str(_project_root) not in sys.path:
 
 # 의존성 확인 및 설치
 
+<<<<<<< HEAD
 if getattr(sys, "frozen", False):
     # frozen 실행 파일: 패키지가 이미 번들됨, 직접 임포트
     from helper_md_doc import requirements_rnac
@@ -35,6 +36,15 @@ else:
     requirements_rnac = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(requirements_rnac)
     requirements_rnac.check_and_install_dependencies()
+=======
+spec = importlib.util.spec_from_file_location(
+    "requirements_rnac", os.path.join(
+        os.path.dirname(__file__), "requirements_rnac.py")
+)
+requirements_rnac = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(requirements_rnac)
+requirements_rnac.check_and_install_dependencies()
+>>>>>>> master
 
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -616,12 +626,30 @@ def replace_latex_with_mathml(md_text: str) -> str:
     """
     import latex2mathml.converter
 
+    def _fix_mathml_overline(mathml: str) -> str:
+        """latex2mathml의 \\overline 변환 결과를 Pandoc OMML 호환 MathML로 교정.
+
+        latex2mathml은 \\overline을 <mo accent="true">&#x02015;</mo>로 변환하는데,
+        Pandoc이 이를 <m:limUpp>로 오변환함. &#x00AF; + accent 제거로 수정.
+        """
+        # <mo accent="true">&#x02015;</mo> → <mo stretchy="true">¯</mo>
+        # latex2mathml은 HTML 엔티티 텍스트(&amp;#x02015;) 또는 실제 문자(U+2015)로 출력할 수 있음
+        mathml = re.sub(
+            r'<mo\s+accent="true">(?:&#x0*2015;|\u2015)</mo>',
+            '<mo stretchy="true">\u00af</mo>',
+            mathml,
+        )
+        # <mover> 자체의 accent 속성이 있으면 제거 (있을 경우)
+        mathml = re.sub(r'(<mover)\s+accent="true"', r'\1', mathml)
+        return mathml
+
     def replace_display_math(match):
         """블록 수식 $$...$$ → MathML (display block)"""
         latex_code = match.group(1).strip()
         if is_simple_text(latex_code):
             return f'<div style="text-align: center; margin: 1rem 0; font-weight: bold;">{latex_code}</div>'
         mathml = latex2mathml.converter.convert(latex_code, display="block")
+        mathml = _fix_mathml_overline(mathml)
         return f'<div style="text-align: center; margin: 1rem 0;">{mathml}</div>'
 
     def replace_inline_math(match):
@@ -630,6 +658,7 @@ def replace_latex_with_mathml(md_text: str) -> str:
         if is_simple_text(latex_code):
             return f"<code>{latex_code}</code>"
         mathml = latex2mathml.converter.convert(latex_code, display="inline")
+        mathml = _fix_mathml_overline(mathml)
         return mathml
 
     md_text = re.sub(r"\$\$(.*?)\$\$", replace_display_math,

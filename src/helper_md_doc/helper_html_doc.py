@@ -5,9 +5,11 @@ import pypandoc
 import importlib.util
 import argparse
 import base64
+import io
 import os
 import re
 import sys
+import zipfile
 import logging
 from pathlib import Path
 from typing import Optional
@@ -19,6 +21,7 @@ if str(_project_root) not in sys.path:
 
 # 의존성 확인 및 설치
 
+<<<<<<< HEAD
 if getattr(sys, "frozen", False):
     from helper_md_doc import requirements_rnac
     requirements_rnac.check_and_install_dependencies()
@@ -30,6 +33,15 @@ else:
     requirements_rnac = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(requirements_rnac)
     requirements_rnac.check_and_install_dependencies()
+=======
+spec = importlib.util.spec_from_file_location(
+    "requirements_rnac", os.path.join(
+        os.path.dirname(__file__), "requirements_rnac.py")
+)
+requirements_rnac = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(requirements_rnac)
+requirements_rnac.check_and_install_dependencies()
+>>>>>>> master
 
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -170,6 +182,62 @@ def clean_html_for_pandoc(html_text: str) -> str:
 # 패키지 내장 reference.docx 경로 (Code Fence 스타일 정의 포함)
 _REFERENCE_DOCX = os.path.join(os.path.dirname(__file__), "reference.docx")
 
+# Pandoc MathML→OMML 변환 시 \overline이 <m:limUpp>로 잘못 생성되는 문제 수정.
+# 바(bar) 문자(U+00AF ¯)를 상한(limit)으로 사용하는 <m:limUpp>를 <m:bar pos=top>으로 교체.
+_BAR_CHARS = {"\u00af", "\u02015", "\u203e", "\u0305"}  # ¯ ‒ ‾ ̅
+_RE_LIMUPP_BAR = re.compile(
+    r"<m:limUpp>"
+    r"(<m:e>(?:(?!<m:e>|</m:e>).)*</m:e>)"   # <m:e>...</m:e> (중첩 없는 단순 캡처)
+    r"<m:lim>(?:<m:r>(?:<m:rPr>.*?</m:rPr>)?<m:t>([^<]*)</m:t></m:r>)+</m:lim>"
+    r"</m:limUpp>",
+    re.DOTALL,
+)
+
+
+def _fix_overline_omml(xml: str) -> str:
+    """OMML XML에서 bar 문자를 상한으로 사용하는 <m:limUpp>를 <m:bar pos=top>으로 교체."""
+
+    def replace_limupp(m: re.Match) -> str:
+        inner_e = m.group(1)
+        # <m:t> 내부 텍스트만 수집
+        lim_texts = re.findall(r"<m:t>([^<]*)</m:t>", m.group(0)[m.end(1):])
+        combined = "".join(lim_texts).strip()
+        if all(ch in _BAR_CHARS for ch in combined) and combined:
+            return (
+                "<m:bar>"
+                "<m:barPr><m:pos m:val=\"top\"/></m:barPr>"
+                f"{inner_e}"
+                "</m:bar>"
+            )
+        return m.group(0)
+
+    return _RE_LIMUPP_BAR.sub(replace_limupp, xml)
+
+
+def fix_overline_in_docx(docx_path: str) -> None:
+    """DOCX 파일 내 OMML의 잘못된 overline(<m:limUpp>) 표현을 <m:bar>로 수정 (인플레이스).
+
+    Pandoc의 MathML→OMML 변환 시 LaTeX \\overline이 상한기호(<m:limUpp>)로
+    잘못 생성되는 문제를 사후 교정합니다.
+
+    Args:
+        docx_path: 수정할 DOCX 파일 경로 (덮어씀)
+    """
+    targets = ("word/document.xml", "word/footnotes.xml", "word/endnotes.xml")
+    buf = io.BytesIO()
+    with zipfile.ZipFile(docx_path, "r") as zin, zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename in targets:
+                xml = data.decode("utf-8")
+                fixed = _fix_overline_omml(xml)
+                if fixed != xml:
+                    logging.debug(f"overline 수식 교정: {item.filename}")
+                data = fixed.encode("utf-8")
+            zout.writestr(item, data)
+    with open(docx_path, "wb") as f:
+        f.write(buf.getvalue())
+
 
 def html_to_doc(html_path: str, output_path: str, reference_doc: Optional[str] = None) -> None:
     """
@@ -200,6 +268,9 @@ def html_to_doc(html_path: str, output_path: str, reference_doc: Optional[str] =
     pypandoc.convert_text(
         html_text, "docx", format="html", outputfile=output_path, extra_args=extra_args
     )
+
+    logging.debug("overline 수식 교정 중...")
+    fix_overline_in_docx(output_path)
 
     logging.info(f"변환 완료: {output_path}")
 
