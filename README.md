@@ -240,6 +240,7 @@ MIT License
 - Markdown → PDF 변환 기능 개선
 - 누락 라이브러리 감지 및 설치 안내 기능 추가
 
-### v0.5.14(2026-05-17)
+### v0.5.15(2026-05-17)
 
 - 수식 랜더링 docx 변환시 mathml → omml로 변경 (품질 향상)
+- table outline 개선
