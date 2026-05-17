@@ -85,6 +85,10 @@ def md_to_doc(
                 extra_args.append(f"--reference-doc={ref_doc}")
             pypandoc.convert_file(
                 tmp_md, "docx", outputfile=output_path, extra_args=extra_args)
+
+            logging.debug("표 스타일/테두리/정렬 교정 중...")
+            from helper_md_doc.helper_html_doc import fix_tables_in_docx
+            fix_tables_in_docx(output_path)
     else:
         # mathml / image 모드: HTML 경유 변환
         logging.debug(f"Markdown → HTML 변환 중 (math_mode={math_mode})...")
@@ -101,6 +105,10 @@ def md_to_doc(
         pypandoc.convert_text(
             html_text, "docx", format="html", outputfile=output_path, extra_args=extra_args
         )
+
+        logging.debug("표 스타일/테두리/정렬 교정 중...")
+        from helper_md_doc.helper_html_doc import fix_tables_in_docx
+        fix_tables_in_docx(output_path)
 
         logging.debug("overline 수식 교정 중...")
         from helper_md_doc.helper_html_doc import fix_overline_in_docx
