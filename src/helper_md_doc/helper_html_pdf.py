@@ -56,21 +56,38 @@ def _html_text_to_pdf(html_text: str, output_path: str, base_dir: Optional[str] 
         async with async_playwright() as playwright:
             browser = await playwright.chromium.launch(headless=True)
             page = await browser.new_page()
-            await page.set_content(rendered_html, wait_until="networkidle")
+            await page.emulate_media(media="print")
+            await page.set_content(rendered_html, wait_until="load")
             await _wait_until_assets_ready(page)
-            await page.emulate_media(media="screen")
-            await page.pdf(path=output_path, format="A4", print_background=True)
+            await page.pdf(
+                path=output_path,
+                format="A4",
+                print_background=True,
+                margin={"top": "15mm", "bottom": "15mm", "left": "15mm", "right": "15mm"},
+            )
             await page.close()
             await browser.close()
 
     def _run_in_thread():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(_run())
-        loop.close()
+        try:
+            loop.run_until_complete(_run())
+        except PermissionError:
+            logging.error(
+                f"파일 쓰기 실패: '{output_path}'\n"
+                "PDF 뷰어에서 해당 파일을 닫은 후 다시 실행하세요."
+            )
+            sys.exit(1)
+        finally:
+            loop.close()
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         executor.submit(_run_in_thread).result()
+
+    if not os.path.isfile(output_path):
+        logging.error(f"PDF 생성 실패: {output_path}")
+        sys.exit(1)
 
     logging.info(f"변환 완료: {output_path}")
     return output_path
