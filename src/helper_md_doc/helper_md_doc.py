@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from helper_md_doc.helper_html_doc import clean_html_for_pandoc  # mathml/image 모드에서 사용
+from helper_md_doc.helper_docx_fix import fix_tables_in_docx, fix_overline_in_docx
 from helper_md_doc.helper_md_html import md_to_html, _cleanup_browser, replace_mermaid_with_images
 import pypandoc
 import importlib.util
@@ -22,7 +23,6 @@ if str(_project_root) not in sys.path:
 
 # 의존성 확인 및 설치
 
-<<<<<<< HEAD
 if getattr(sys, "frozen", False):
     # frozen 실행 파일: 패키지가 이미 번들됨, 직접 임포트
     from helper_md_doc import requirements_rnac
@@ -35,15 +35,6 @@ else:
     requirements_rnac = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(requirements_rnac)
     requirements_rnac.check_and_install_dependencies()
-=======
-spec = importlib.util.spec_from_file_location(
-    "requirements_rnac", os.path.join(
-        os.path.dirname(__file__), "requirements_rnac.py")
-)
-requirements_rnac = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(requirements_rnac)
-requirements_rnac.check_and_install_dependencies()
->>>>>>> master
 
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -100,11 +91,15 @@ def md_to_doc(
                 extra_args.append(f"--reference-doc={ref_doc}")
             pypandoc.convert_file(
                 tmp_md, "docx", outputfile=output_path, extra_args=extra_args)
+
+            logging.debug("표 스타일/테두리/정렬 교정 중...")
+            fix_tables_in_docx(output_path)
     else:
         # mathml / image 모드: HTML 경유 변환
         logging.debug(f"Markdown → HTML 변환 중 (math_mode={math_mode})...")
+        md_dir = os.path.dirname(os.path.abspath(md_path))
         html_text = md_to_html(md_text, title=title,
-                               use_base64=True, math_mode=math_mode)
+                               use_base64=True, math_mode=math_mode, md_dir=md_dir)
 
         logging.debug(f"HTML 정리 중 (스크립트 태그 제거)...")
         html_text = clean_html_for_pandoc(html_text)
@@ -113,12 +108,16 @@ def md_to_doc(
         extra_args = ["--standalone"]
         if os.path.isfile(ref_doc):
             extra_args.append(f"--reference-doc={ref_doc}")
+        extra_args.append(f"--resource-path={md_dir}")
+        extra_args.append("--quiet")  # 없는 이미지 경고를 fatal로 처리하지 않음
         pypandoc.convert_text(
             html_text, "docx", format="html", outputfile=output_path, extra_args=extra_args
         )
 
+        logging.debug("표 스타일/테두리/정렬 교정 중...")
+        fix_tables_in_docx(output_path)
+
         logging.debug("overline 수식 교정 중...")
-        from helper_md_doc.helper_html_doc import fix_overline_in_docx
         fix_overline_in_docx(output_path)
 
     _cleanup_browser()

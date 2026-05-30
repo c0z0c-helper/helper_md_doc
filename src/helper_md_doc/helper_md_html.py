@@ -1,29 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from playwright.sync_api import sync_playwright, Browser, Page
-from PIL import Image, ImageChops
 import markdown
-import io
 import importlib.util
 import argparse
-import base64
 import html
 import os
 import re
 import sys
 import logging
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import Optional
 
-# 패키지 루트를 sys.path에 추가하여 절대 임포트 통일
 _project_root = Path(__file__).resolve().parents[1]
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 # 의존성 확인 및 설치
 
-<<<<<<< HEAD
 if getattr(sys, "frozen", False):
     # frozen 실행 파일: 패키지가 이미 번들됨, 직접 임포트
     from helper_md_doc import requirements_rnac
@@ -36,21 +30,16 @@ else:
     requirements_rnac = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(requirements_rnac)
     requirements_rnac.check_and_install_dependencies()
-=======
-spec = importlib.util.spec_from_file_location(
-    "requirements_rnac", os.path.join(
-        os.path.dirname(__file__), "requirements_rnac.py")
-)
-requirements_rnac = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(requirements_rnac)
-requirements_rnac.check_and_install_dependencies()
->>>>>>> master
 
+from helper_md_doc.helper_render import (
+    _cleanup_browser,
+    render_mermaid_to_png,
+    render_mermaid_base64,
+    render_latex_to_png,
+    render_latex_base64,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
-# body {{{{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; line-height: 1.6; padding: 2rem; max-width: 900px; margin: auto; }}}}
-# pre {{{{ background: #f6f8fa; padding: 1rem; overflow: auto; border-radius: 6px; }}}}
-# code {{{{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 8px; }}}}
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="ko">
@@ -59,13 +48,33 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{title}</title>
   <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; line-height: 1.6; padding: 2rem; max-width: 900px; margin: auto; }}
-        pre {{ background: #f6f8fa; padding: 1rem; overflow: auto; border-radius: 6px; }}
-        code {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 8px; }}
-        table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}
-        th, td {{ border: 1px solid #ddd; padding: 0.5rem; text-align: left; }}
-        th {{ background: #f6f8fa; font-weight: 600; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; font-size: 10pt; line-height: 1.6; padding: 1rem 2rem; max-width: 100%; margin: 0; box-sizing: border-box; }}
+        p {{ margin: 0.4em 0 0.6em; }}
+        pre {{ background: #f6f8fa; padding: 1rem; border-radius: 6px; white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; margin: 0.8em 0; }}
+        code {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 0.9em; word-break: break-word; overflow-wrap: break-word; background: #f0f0f0; padding: 0.1em 0.35em; border-radius: 3px; }}
+        pre code {{ background: none; padding: 0; border-radius: 0; }}
+        blockquote {{ margin: 0.8em 0; padding: 0.4em 1em; border-left: 4px solid #c8d0d8; background: #f9f9f9; color: #555; }}
+        hr {{ border: none; border-top: 1px solid #ddd; margin: 1.2em 0; }}
+        a {{ color: #1a6ea8; text-decoration: none; }}
+        table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; table-layout: auto; }}
+        th, td {{ border: 1px solid #ddd; padding: 0.4rem 0.5rem; text-align: left; word-break: break-word; overflow-wrap: break-word; vertical-align: top; min-width: 3em; max-width: 30em; }}
+        th {{ background: #eef1f5; font-weight: 600; }}
+        tbody tr:nth-child(even) {{ background: #f9fafb; }}
         .mermaid {{ margin: 1rem 0; }}
+        img {{ max-width: 100%; height: auto; display: block; page-break-inside: avoid; }}
+        h1 {{ font-size: 16pt; margin: 0.6em 0 0.3em; padding-bottom: 0.2em; border-bottom: 2px solid #ddd; }}
+        h2 {{ font-size: 15pt; margin: 0.6em 0 0.3em; padding-bottom: 0.15em; border-bottom: 1px solid #e8e8e8; }}
+        h3 {{ font-size: 14pt; margin: 0.5em 0 0.3em; }}
+        h4 {{ font-size: 13pt; margin: 0.5em 0 0.2em; }}
+        h5 {{ font-size: 12pt; margin: 0.4em 0 0.2em; }}
+        h6 {{ font-size: 11pt; margin: 0.4em 0 0.2em; color: #555; }}
+        h1, h2, h3, h4, h5, h6 {{ page-break-after: avoid; }}
+        tr {{ page-break-inside: avoid; }}
+        @media print {{
+            body {{ padding: 0; }}
+            pre {{ white-space: pre-wrap; }}
+            a {{ color: #1a6ea8; }}
+        }}
   </style>
   {scripts}
 </head>
@@ -75,423 +84,71 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </html>
 """
 
-# 전역 Playwright 브라우저 (다이어그램 렌더링 성능 최적화)
-_playwright = None
-_browser: Optional[Browser] = None
-_page: Optional[Page] = None
 
-
-def _get_browser_page():
-    """Playwright 브라우저 페이지를 전역 캐싱으로 반환 (성능 최적화)"""
-    global _playwright, _browser, _page
-    if _page is None:
-        _playwright = sync_playwright().start()
-        _browser = _playwright.chromium.launch(headless=True)
-        _page = _browser.new_page()
-
-        # mermaid.min.js 사전 로드
-        mermaid_js_path = os.path.join(
-            os.path.dirname(__file__), "mermaid/mermaid.js")
-        with open(mermaid_js_path, "r", encoding="utf-8") as f:
-            mermaid_js = f.read()
-        _page.add_script_tag(content=mermaid_js)
-        _page.evaluate(
-            "mermaid.initialize({ startOnLoad: false, theme: 'default' })")
-
-        # katex.min.js 및 CSS 사전 로드
-        katex_js_path = os.path.join(
-            os.path.dirname(__file__), "katex", "katex.js")
-        katex_css_path = os.path.join(
-            os.path.dirname(__file__), "katex", "katex.css")
-        with open(katex_js_path, "r", encoding="utf-8") as f:
-            katex_js = f.read()
-        with open(katex_css_path, "r", encoding="utf-8") as f:
-            katex_css = f.read()
-        _page.add_script_tag(content=katex_js)
-        _page.add_style_tag(content=katex_css)
-    return _page
-
-
-def _cleanup_browser():
-    """브라우저 리소스 정리"""
-    global _playwright, _browser, _page
-    if _page:
-        _page.close()
-    if _browser:
-        _browser.close()
-    if _playwright:
-        _playwright.stop()
-    _page = _browser = _playwright = None
-
-
-def sanitize_mermaid_code(mermaid_code: str) -> str:
-    """Mermaid 코드의 노드 라벨 내 HTML/Markdown 특수문자를 전각문자로 변환하여 파싱 오류 방지
+def is_simple_text(text: str) -> bool:
+    """LaTeX 명령어가 없는 단순 텍스트인지 판별
 
     Args:
-        mermaid_code: 원본 Mermaid 다이어그램 코드
+        text: 검사할 텍스트
 
     Returns:
-        노드 라벨 내 특수문자가 전각문자로 변환된 Mermaid 코드
+        True면 단순 텍스트, False면 LaTeX 수식
     """
-    # HTML/Markdown 파싱 오류를 일으키는 특수문자 매핑 (ASCII → 전각문자)
-    special_chars = {
-        "<": "＜",  # U+FF1C FULLWIDTH LESS-THAN SIGN
-        ">": "＞",  # U+FF1E FULLWIDTH GREATER-THAN SIGN
-        "&": "＆",  # U+FF06 FULLWIDTH AMPERSAND
-        "_": "＿",  # U+FF3F FULLWIDTH LOW LINE (언더바)
-    }
-
-    def replace_in_label(match):
-        """노드 라벨 내부의 특수문자만 전각문자로 변환 (<br/>, <br> 제외)"""
-        label_content = match.group(1)
-
-        # <br/> 및 <br> 태그를 임시 플레이스홀더로 치환 (줄바꿈 태그 보존)
-        # 주의: special_chars에 '_'가 있으므로 언더바를 사용하지 않는 플레이스홀더 사용
-        label_content = label_content.replace(
-            "<br/>", "\x00PLACEHOLDER\x01BR\x01SLASH\x00")
-        label_content = label_content.replace(
-            "<br>", "\x00PLACEHOLDER\x01BR\x00")
-
-        # 특수문자 변환
-        for ascii_char, fullwidth_char in special_chars.items():
-            label_content = label_content.replace(ascii_char, fullwidth_char)
-
-        # 플레이스홀더 복원
-        label_content = label_content.replace(
-            "\x00PLACEHOLDER\x01BR\x01SLASH\x00", "<br/>")
-        label_content = label_content.replace(
-            "\x00PLACEHOLDER\x01BR\x00", "<br>")
-
-        return f'["{label_content}"]'
-
-    # 패턴: ["..."] 형태의 노드 라벨 찾기
-    mermaid_code = re.sub(r'\["([^"]+)"\]', replace_in_label, mermaid_code)
-
-    return mermaid_code
+    latex_patterns = [r"\\[a-zA-Z]+", r"[_^{}]", r"\\[^a-zA-Z]"]
+    for pattern in latex_patterns:
+        if re.search(pattern, text):
+            return False
+    return True
 
 
-def _crop_whitespace(
-    png_bytes: bytes, padding: int = 2, tolerance: int = 10, dpi: int = 0
-) -> bytes:
-    """PNG bytes에서 가장자리 픽셀 기반으로 배경색을 자동 감지하여 여백을 제거
-
-    4개 코너의 3x3 영역 평균값을 배경색으로 추정하고,
-    배경색과 유사한(tolerance 이내) 가장자리 픽셀을 제거합니다.
+def is_list_or_special_line(line: str) -> bool:
+    """라인이 리스트 항목이나 특수 패턴으로 시작하는지 확인
 
     Args:
-        png_bytes: 원본 PNG 바이너리 데이터
-        padding: crop 후 사방에 남길 여백 픽셀 수
-        tolerance: 배경색으로 판단할 색상 허용 오차 (0~255)
-        dpi: PNG 메타데이터에 삽입할 DPI 값 (0이면 미설정)
-            pandoc은 DPI 정보가 없으면 72dpi로 가정하여 Word에서 크게 표시됨
+        line: 검사할 라인
 
     Returns:
-        여백이 제거된 PNG 바이너리 데이터
+        True면 리스트/특수 라인, False면 일반 텍스트
     """
-    img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
-    # 알파 채널을 흰색 배경에 합성하여 RGB로 변환
-    bg = Image.new("RGBA", img.size, (255, 255, 255, 255))
-    bg.paste(img, mask=img.split()[3])
-    rgb = bg.convert("RGB")
-
-    w, h = rgb.size
-
-    # 4개 코너의 3x3 영역 픽셀을 샘플링하여 배경색 추정
-    corner_size = min(3, w, h)
-    sample_pixels: List[Tuple[int, int, int]] = []
-    regions = [
-        (0, 0, corner_size, corner_size),  # top-left
-        (w - corner_size, 0, w, corner_size),  # top-right
-        (0, h - corner_size, corner_size, h),  # bottom-left
-        (w - corner_size, h - corner_size, w, h),  # bottom-right
-    ]
-    for region in regions:
-        patch = rgb.crop(region)
-        sample_pixels.extend(tuple(patch.getdata()))  # type: ignore[arg-type]
-
-    r_avg = sum(p[0] for p in sample_pixels) // len(sample_pixels)
-    g_avg = sum(p[1] for p in sample_pixels) // len(sample_pixels)
-    b_avg = sum(p[2] for p in sample_pixels) // len(sample_pixels)
-    bg_color = (r_avg, g_avg, b_avg)
-
-    # 배경색 단색 이미지와의 차이를 계산하여 콘텐츠 영역 bbox 추출
-    bg_image = Image.new("RGB", rgb.size, bg_color)
-    diff = ImageChops.difference(rgb, bg_image)
-
-    # tolerance 적용: 차이가 tolerance 이하인 픽셀을 배경(0)으로 처리
-    lut = [0 if v <= tolerance else v for v in range(256)]
-    diff = diff.point(lut * 3)  # RGB 3채널 동일 적용
-
-    bbox = diff.getbbox()
-    if bbox is None:
-        return png_bytes
-
-    # padding 적용 및 이미지 경계 clamp
-    left = max(0, bbox[0] - padding)
-    top = max(0, bbox[1] - padding)
-    right = min(w, bbox[2] + padding)
-    bottom = min(h, bbox[3] + padding)
-
-    cropped = rgb.crop((left, top, right, bottom))
-    buf = io.BytesIO()
-    save_kwargs: dict = {"format": "PNG"}
-    if dpi > 0:
-        save_kwargs["dpi"] = (dpi, dpi)
-    cropped.save(buf, **save_kwargs)
-    return buf.getvalue()
+    stripped = line.lstrip()
+    if stripped.startswith(("- ", "* ", "+ ")):
+        return True
+    if re.match(r"^\d+\.\s", stripped):
+        return True
+    if stripped.startswith("#"):
+        return True
+    if re.match(r"^(-{3,}|\*{3,}|_{3,})\s*$", stripped):
+        return True
+    return False
 
 
-def png_to_base64(png_path: str) -> str:
-    """PNG 파일을 Base64 문자열로 인코딩
+def normalize_markdown_spacing(md_text: str) -> str:
+    """Markdown 리스트 앞에 빈 줄 추가 및 이스케이프된 볼드 마커 복원 (python-markdown 호환성)"""
+    if md_text and md_text[0] == "\ufeff":
+        md_text = md_text[1:]
 
-    Args:
-        png_path: PNG 파일 경로
+    md_text = re.sub(r"\\\*\\\*([^*]+?)\\\*\\\*", r"**\1**", md_text)
 
-    Returns:
-        data:image/png;base64,... 형식의 Base64 문자열
-    """
-    with open(png_path, "rb") as f:
-        png_data = f.read()
-    b64_data = base64.b64encode(png_data).decode("utf-8")
-    return f"data:image/png;base64,{b64_data}"
+    lines = md_text.split("\n")
+    result_lines = []
 
+    for i, line in enumerate(lines):
+        result_lines.append(line)
 
-def render_mermaid_to_png(mermaid_code: str, output_path: str) -> str:
-    """Playwright로 Mermaid 다이어그램을 PNG로 렌더링 (최적화: 브라우저 재사용)
+        if i < len(lines) - 1 and line.strip():
+            next_line = lines[i + 1]
+            if not next_line.strip():
+                continue
+            if is_list_or_special_line(line) and not re.match(
+                r"^(-{3,}|\*{3,}|_{3,})\s*$", line.lstrip()
+            ):
+                continue
+            if is_list_or_special_line(next_line):
+                result_lines.append("<p/>")
 
-    Args:
-        mermaid_code: Mermaid 다이어그램 코드
-        output_path: PNG 파일 저장 경로
-
-    Returns:
-        PNG 파일 경로
-    """
-    # HTML 특수문자 전처리 (파싱 오류 방지)
-    mermaid_code = sanitize_mermaid_code(mermaid_code)
-
-    page = _get_browser_page()
-
-    # HTML 컨테이너 생성 및 Mermaid 렌더링
-    html_content = f"""
-    <div id="mermaid-container" style="background: white; padding: 20px;">
-        <div class="mermaid">{mermaid_code}</div>
-    </div>
-    """
-    page.set_content(
-        f"<!DOCTYPE html><html><body>{html_content}</body></html>")
-    # page.evaluate("""async () => {
-    #     await mermaid.run({ querySelector: '.mermaid' });
-    # }""")
-    page.evaluate("void mermaid.run({ querySelector: '.mermaid' })")
-    page.wait_for_selector(".mermaid svg", timeout=5000)
-
-    # SVG 요소 스크린샷 후 여백 제거
-    svg_element = page.query_selector(".mermaid svg")
-    if svg_element:
-        png_bytes = svg_element.screenshot()
-        png_bytes = _crop_whitespace(png_bytes)
-        with open(output_path, "wb") as f:
-            f.write(png_bytes)
-
-    return output_path
-
-
-def render_mermaid_base64(mermaid_code: str) -> str:
-    """Playwright로 Mermaid 다이어그램을 Base64 Data URL로 변환 (파일 저장 없음)
-
-    Args:
-        mermaid_code: Mermaid 다이어그램 코드
-
-    Returns:
-        data:image/png;base64,... 형식의 Base64 문자열
-    """
-    # HTML 특수문자 전처리 (파싱 오류 방지)
-    mermaid_code = sanitize_mermaid_code(mermaid_code)
-
-    page = _get_browser_page()
-
-    html_content = f"""
-    <div id="mermaid-container" style="background: white; padding: 20px;">
-        <div class="mermaid">{mermaid_code}</div>
-    </div>
-    """
-    page.set_content(
-        f"<!DOCTYPE html><html><body>{html_content}</body></html>")
-    # page.evaluate("""async () => {
-    #     await mermaid.run({ querySelector: '.mermaid' });
-    # }""")
-    page.evaluate("void mermaid.run({ querySelector: '.mermaid' })")
-    page.wait_for_selector(".mermaid svg", timeout=5000)
-
-    svg_element = page.query_selector(".mermaid svg")
-    if svg_element:
-        png_bytes = svg_element.screenshot()
-        png_bytes = _crop_whitespace(png_bytes)
-        b64_data = base64.b64encode(png_bytes).decode("utf-8")
-        return f"data:image/png;base64,{b64_data}"
-
-    return ""
-
-
-def render_latex_to_png(latex_code: str, output_path: str, display_mode: bool = False) -> str:
-    """Playwright로 KaTeX 수식을 PNG로 렌더링
-
-    Args:
-        latex_code: LaTeX 수식 코드 ($ 기호 제외)
-        output_path: PNG 파일 저장 경로
-        display_mode: True면 블록 수식, False면 인라인 수식
-
-    Returns:
-        PNG 파일 경로
-    """
-    # 새 페이지 생성 (이전 상태 영향 방지)
-    global _playwright, _browser
-    if _browser is None:
-        if _playwright is None:
-            _playwright = sync_playwright().start()
-        _browser = _playwright.chromium.launch(headless=True)
-
-    page = _browser.new_page()
-
-    try:
-        # LaTeX 코드의 백슬래시 이스케이프 처리 (JSON 문자열로 전달하기 위해)
-        import json
-
-        latex_json = json.dumps(latex_code)
-
-        # HTML 컨테이너 생성
-        container_style = "background: white; padding: 10px; display: inline-block;"
-
-        # KaTeX CSS 읽기
-        katex_css_path = os.path.join(
-            os.path.dirname(__file__), "katex", "katex.css")
-        with open(katex_css_path, "r", encoding="utf-8") as f:
-            katex_css = f.read()
-
-        # KaTeX JS 읽기
-        katex_js_path = os.path.join(
-            os.path.dirname(__file__), "katex", "katex.js")
-        with open(katex_js_path, "r", encoding="utf-8") as f:
-            katex_js = f.read()
-
-        html_content = f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <style>{katex_css}</style>
-</head>
-<body>
-    <div id="latex-container" style="{container_style}">
-        <span id="latex-output"></span>
-    </div>
-    <script>{katex_js}</script>
-    <script>
-        const latex = {latex_json};
-        const outputElement = document.getElementById('latex-output');
-        try {{
-            katex.render(latex, outputElement, {{
-                displayMode: {str(display_mode).lower()},
-                throwOnError: false
-            }});
-        }} catch (e) {{
-            console.error('KaTeX error:', e);
-            outputElement.textContent = 'Error rendering equation';
-        }}
-    </script>
-</body>
-</html>"""
-        page.set_content(html_content)
-        page.wait_for_load_state("networkidle")
-
-        # 렌더링된 요소 스크린샷 후 여백 제거
-        latex_element = page.query_selector("#latex-container")
-        if latex_element:
-            png_bytes = latex_element.screenshot()
-            png_bytes = _crop_whitespace(png_bytes, dpi=150)
-            with open(output_path, "wb") as f:
-                f.write(png_bytes)
-        else:
-            logging.warning(f"LaTeX 렌더링 실패: {latex_code[:50]}...")
-    finally:
-        page.close()
-
-    return output_path
-
-
-def render_latex_base64(latex_code: str, display_mode: bool = False) -> str:
-    """Playwright로 KaTeX 수식을 Base64 Data URL로 변환 (파일 저장 없음)
-
-    Args:
-        latex_code: LaTeX 수식 코드 ($ 기호 제외)
-        display_mode: True면 블록 수식, False면 인라인 수식
-
-    Returns:
-        data:image/png;base64,... 형식의 Base64 문자열
-    """
-    global _playwright, _browser
-    if _browser is None:
-        if _playwright is None:
-            _playwright = sync_playwright().start()
-        _browser = _playwright.chromium.launch(headless=True)
-
-    page = _browser.new_page()
-
-    try:
-        import json
-
-        latex_json = json.dumps(latex_code)
-        container_style = "background: white; padding: 10px; display: inline-block;"
-
-        katex_css_path = os.path.join(
-            os.path.dirname(__file__), "katex", "katex.css")
-        with open(katex_css_path, "r", encoding="utf-8") as f:
-            katex_css = f.read()
-
-        katex_js_path = os.path.join(
-            os.path.dirname(__file__), "katex", "katex.js")
-        with open(katex_js_path, "r", encoding="utf-8") as f:
-            katex_js = f.read()
-
-        html_content = f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <style>{katex_css}</style>
-</head>
-<body>
-    <div id="latex-container" style="{container_style}">
-        <span id="latex-output"></span>
-    </div>
-    <script>{katex_js}</script>
-    <script>
-        const latex = {latex_json};
-        const outputElement = document.getElementById('latex-output');
-        try {{
-            katex.render(latex, outputElement, {{
-                displayMode: {str(display_mode).lower()},
-                throwOnError: false
-            }});
-        }} catch (e) {{
-            console.error('KaTeX error:', e);
-            outputElement.textContent = 'Error rendering equation';
-        }}
-    </script>
-</body>
-</html>"""
-        page.set_content(html_content)
-        page.wait_for_load_state("networkidle")
-
-        latex_element = page.query_selector("#latex-container")
-        if latex_element:
-            png_bytes = latex_element.screenshot()
-            png_bytes = _crop_whitespace(png_bytes, dpi=150)
-            b64_data = base64.b64encode(png_bytes).decode("utf-8")
-            return f"data:image/png;base64,{b64_data}"
-        else:
-            logging.warning(f"LaTeX 렌더링 실패: {latex_code[:50]}...")
-            return ""
-    finally:
-        page.close()
+    result = "\n".join(result_lines)
+    result = re.sub(r"(<br/>|<p/>)(\n(<br/>|<p/>))+", "<p/>", result)
+    return result
 
 
 def replace_mermaid_with_images(
@@ -516,7 +173,6 @@ def replace_mermaid_with_images(
     def replace_block(match):
         mermaid_code = match.group(1).strip()
         diagram_count[0] += 1
-
         logging.debug(f"Mermaid 다이어그램 {diagram_count[0]} 렌더링 중...")
 
         if use_base64:
@@ -530,23 +186,6 @@ def replace_mermaid_with_images(
         return f'<img src="{img_src}" alt="Mermaid Diagram {diagram_count[0]}" style="max-width: 100%;" />'
 
     return re.sub(pattern, replace_block, md_text, flags=re.DOTALL)
-
-
-def is_simple_text(text: str) -> bool:
-    """LaTeX 명령어가 없는 단순 텍스트인지 판별
-
-    Args:
-        text: 검사할 텍스트
-
-    Returns:
-        True면 단순 텍스트, False면 LaTeX 수식
-    """
-    # LaTeX 명령어 패턴: \command, {}, ^, _, 등
-    latex_patterns = [r"\\[a-zA-Z]+", r"[_^{}]", r"\\[^a-zA-Z]"]
-    for pattern in latex_patterns:
-        if re.search(pattern, text):
-            return False
-    return True
 
 
 def replace_latex_with_images(
@@ -568,15 +207,11 @@ def replace_latex_with_images(
     equation_count = [0]
 
     def replace_display_math(match):
-        """블록 수식 $$...$$ 치환"""
         latex_code = match.group(1).strip()
-
         if is_simple_text(latex_code):
             return f'<div style="text-align: center; margin: 1rem 0; font-weight: bold;">{latex_code}</div>'
-
         equation_count[0] += 1
         logging.debug(f"블록 수식 {equation_count[0]} 렌더링 중...")
-
         if use_base64:
             img_src = render_latex_base64(latex_code, display_mode=True)
         else:
@@ -584,19 +219,14 @@ def replace_latex_with_images(
             png_path = os.path.join(output_dir, png_filename)
             render_latex_to_png(latex_code, png_path, display_mode=True)
             img_src = f"{output_dir}/{png_filename}"
-
         return f'<div style="text-align: center; margin: 1rem 0;"><img src="{img_src}" alt="Equation {equation_count[0]}" style="display: block; margin: 0 auto;" /></div>'
 
     def replace_inline_math(match):
-        """인라인 수식 $...$ 치환"""
         latex_code = match.group(1).strip()
-
         if is_simple_text(latex_code):
             return f"<code>{latex_code}</code>"
-
         equation_count[0] += 1
         logging.debug(f"인라인 수식 {equation_count[0]} 렌더링 중...")
-
         if use_base64:
             img_src = render_latex_base64(latex_code, display_mode=False)
         else:
@@ -604,14 +234,10 @@ def replace_latex_with_images(
             png_path = os.path.join(output_dir, png_filename)
             render_latex_to_png(latex_code, png_path, display_mode=False)
             img_src = f"{output_dir}/{png_filename}"
-
         return f'<img src="{img_src}" alt="Equation {equation_count[0]}" style="display: inline-block; vertical-align: middle;" />'
 
-    md_text = re.sub(r"\$\$(.*?)\$\$", replace_display_math,
-                     md_text, flags=re.DOTALL)
-    md_text = re.sub(r"(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)",
-                     replace_inline_math, md_text)
-
+    md_text = re.sub(r"\$\$(.*?)\$\$", replace_display_math, md_text, flags=re.DOTALL)
+    md_text = re.sub(r"(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)", replace_inline_math, md_text)
     return md_text
 
 
@@ -627,24 +253,15 @@ def replace_latex_with_mathml(md_text: str) -> str:
     import latex2mathml.converter
 
     def _fix_mathml_overline(mathml: str) -> str:
-        """latex2mathml의 \\overline 변환 결과를 Pandoc OMML 호환 MathML로 교정.
-
-        latex2mathml은 \\overline을 <mo accent="true">&#x02015;</mo>로 변환하는데,
-        Pandoc이 이를 <m:limUpp>로 오변환함. &#x00AF; + accent 제거로 수정.
-        """
-        # <mo accent="true">&#x02015;</mo> → <mo stretchy="true">¯</mo>
-        # latex2mathml은 HTML 엔티티 텍스트(&amp;#x02015;) 또는 실제 문자(U+2015)로 출력할 수 있음
         mathml = re.sub(
             r'<mo\s+accent="true">(?:&#x0*2015;|\u2015)</mo>',
             '<mo stretchy="true">\u00af</mo>',
             mathml,
         )
-        # <mover> 자체의 accent 속성이 있으면 제거 (있을 경우)
         mathml = re.sub(r'(<mover)\s+accent="true"', r'\1', mathml)
         return mathml
 
     def replace_display_math(match):
-        """블록 수식 $$...$$ → MathML (display block)"""
         latex_code = match.group(1).strip()
         if is_simple_text(latex_code):
             return f'<div style="text-align: center; margin: 1rem 0; font-weight: bold;">{latex_code}</div>'
@@ -653,7 +270,6 @@ def replace_latex_with_mathml(md_text: str) -> str:
         return f'<div style="text-align: center; margin: 1rem 0;">{mathml}</div>'
 
     def replace_inline_math(match):
-        """인라인 수식 $...$ → MathML (inline)"""
         latex_code = match.group(1).strip()
         if is_simple_text(latex_code):
             return f"<code>{latex_code}</code>"
@@ -661,86 +277,9 @@ def replace_latex_with_mathml(md_text: str) -> str:
         mathml = _fix_mathml_overline(mathml)
         return mathml
 
-    md_text = re.sub(r"\$\$(.*?)\$\$", replace_display_math,
-                     md_text, flags=re.DOTALL)
-    md_text = re.sub(r"(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)",
-                     replace_inline_math, md_text)
-
+    md_text = re.sub(r"\$\$(.*?)\$\$", replace_display_math, md_text, flags=re.DOTALL)
+    md_text = re.sub(r"(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)", replace_inline_math, md_text)
     return md_text
-
-
-def is_list_or_special_line(line: str) -> bool:
-    """라인이 리스트 항목이나 특수 패턴으로 시작하는지 확인
-
-    Args:
-        line: 검사할 라인
-
-    Returns:
-        True면 리스트/특수 라인, False면 일반 텍스트
-    """
-    stripped = line.lstrip()
-    # 순서 없는 리스트: -, *, +
-    if stripped.startswith(("- ", "* ", "+ ")):
-        return True
-    # 순서 있는 리스트: 1., 2., 등
-    if re.match(r"^\d+\.\s", stripped):
-        return True
-    # 해시태그: #
-    if stripped.startswith("#"):
-        return True
-    # 수평선: ---, ***, ___ (3개 이상 반복)
-    if re.match(r"^(-{3,}|\*{3,}|_{3,})\s*$", stripped):
-        return True
-    return False
-
-
-def normalize_markdown_spacing(md_text: str) -> str:
-    """Markdown 리스트 앞에 빈 줄 추가 및 이스케이프된 볼드 마커 복원 (python-markdown 호환성)
-
-    리스트나 특수 라인들 사이에 빈 줄이 없으면 <p/> 태그를 추가하여
-    DOCX 변환 시 단락 구분(^p)이 표시되도록 합니다.
-    """
-    # BOM(Byte Order Mark) 제거: UTF-8 BOM(\ufeff)이 파일 앞에 있으면 Markdown 파싱 실패
-    if md_text and md_text[0] == "\ufeff":
-        md_text = md_text[1:]
-
-    # 이스케이프된 볼드 마커 제거: \*\*text\*\* → **text**
-    # 패턴: 백슬래시로 이스케이프된 별표 쌍만 변환
-    md_text = re.sub(r"\\\*\\\*([^*]+?)\\\*\\\*", r"**\1**", md_text)
-
-    # 리스트 항목 사이에 <p/> 추가 (빈 줄이 없는 경우만)
-    lines = md_text.split("\n")
-    result_lines = []
-
-    for i, line in enumerate(lines):
-        result_lines.append(line)
-
-        # 마지막 라인이 아니고, 현재 라인이 비어있지 않은 경우
-        if i < len(lines) - 1 and line.strip():
-            next_line = lines[i + 1]
-
-            # 다음 라인이 비어있으면 이미 구분되어 있으므로 <p/> 추가 안함
-            if not next_line.strip():
-                continue
-
-            # 현재 라인이 리스트 항목이면 삽입 안함 (리스트 중간 끊김 방지)
-            # 단, 수평선(---)은 예외: 뒤에 오는 라인과 구분이 필요
-            if is_list_or_special_line(line) and not re.match(
-                r"^(-{3,}|\*{3,}|_{3,})\s*$", line.lstrip()
-            ):
-                continue
-
-            # 다음 라인이 리스트나 특수 라인으로 시작하는 경우에만 <p/> 삽입
-            # (비-리스트 라인 뒤에 리스트가 시작될 때만 단락 구분 추가)
-            if is_list_or_special_line(next_line):
-                result_lines.append("<p/>")
-
-    result = "\n".join(result_lines)
-
-    # 중복/혼합 단락 구분 정규화: <br/> 또는 <p/>가 연속될 경우 단일 <p/>로 통합
-    result = re.sub(r"(<br/>|<p/>)(\n(<br/>|<p/>))+", "<p/>", result)
-
-    return result
 
 
 def md_to_html(
@@ -748,6 +287,7 @@ def md_to_html(
     title: Optional[str] = None,
     use_base64: bool = False,
     math_mode: str = "image",
+    md_dir: Optional[str] = None,
 ) -> str:
     """Markdown을 HTML로 변환하고 Mermaid/LaTeX를 처리
 
@@ -758,6 +298,7 @@ def md_to_html(
         math_mode: 수식 처리 방식
             - "image" : LaTeX → KaTeX PNG 이미지 (기본)
             - "mathml": LaTeX → MathML HTML 태그 (pandoc이 OMML로 변환)
+        md_dir: Markdown 파일이 있는 디렉터리 (상대경로 이미지 기준). None이면 CWD 사용
 
     Returns:
         완성된 HTML 문자열
@@ -769,23 +310,23 @@ def md_to_html(
     base_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.join(base_dir, "..")
 
-    # Mermaid 다이어그램을 이미지로 변환
     mermaid_dir = os.path.join(parent_dir, "mermaid_diagrams")
     md_text = replace_mermaid_with_images(md_text, mermaid_dir, use_base64)
 
-    # LaTeX 수식 처리 (math_mode에 따라 분기)
     latex_dir = os.path.join(parent_dir, "latex_equations")
     if math_mode == "mathml":
         md_text = replace_latex_with_mathml(md_text)
-    else:  # "image"
+    else:
         md_text = replace_latex_with_images(md_text, latex_dir, use_base64)
 
-    # Markdown 리스트 정규화
     md_text = normalize_markdown_spacing(md_text)
 
     extensions = ["fenced_code", "tables"]
-    html_body = markdown.markdown(
-        md_text, extensions=extensions, output_format="html")
+    html_body = markdown.markdown(md_text, extensions=extensions, output_format="html")
+
+    if use_base64 and md_dir:
+        from helper_md_doc.helper_html_doc import embed_images_as_base64
+        html_body = embed_images_as_base64(html_body, md_dir)
     html_body = re.sub(
         r"(<pre><code[^>]*>)(.*?)(</code></pre>)",
         lambda match: f"{match.group(1)}{html.unescape(match.group(2)).replace('<', '&lt;').replace('>', '&gt;')}{match.group(3)}",
@@ -794,7 +335,6 @@ def md_to_html(
     )
 
     scripts = ""
-
     return HTML_TEMPLATE.format(title=title, scripts=scripts, content=html_body)
 
 
@@ -825,12 +365,11 @@ def main():
         md_text = f.read()
 
     title = args.title or os.path.splitext(os.path.basename(in_path))[0]
-    html = md_to_html(md_text, title=title,
-                      use_base64=args.base64, math_mode=args.math_mode)
+    result_html = md_to_html(md_text, title=title, use_base64=args.base64, math_mode=args.math_mode)
 
     out_path = args.output or os.path.splitext(in_path)[0] + ".html"
     with open(out_path, "w", encoding="utf-8") as f:
-        f.write(html)
+        f.write(result_html)
 
     _cleanup_browser()
     logging.info(f"생성 완료: {out_path}")

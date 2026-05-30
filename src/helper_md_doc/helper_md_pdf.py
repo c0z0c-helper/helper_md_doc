@@ -32,7 +32,7 @@ else:
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
-def md_to_pdf(md_path: str, output_path: Optional[str] = None, title: Optional[str] = None) -> str:
+def md_to_pdf(md_path: str, output_path: Optional[str] = None, title: Optional[str] = None, math_mode: str = "image") -> str:
     logging.info(f"Markdown 읽기: {md_path}")
     with open(md_path, "r", encoding="utf-8") as file:
         md_text = file.read()
@@ -42,7 +42,7 @@ def md_to_pdf(md_path: str, output_path: Optional[str] = None, title: Optional[s
     base_dir = os.path.dirname(os.path.abspath(md_path))
 
     try:
-        html_text = md_to_html(md_text, title=resolved_title, use_base64=True)
+        html_text = md_to_html(md_text, title=resolved_title, use_base64=True, math_mode=math_mode, md_dir=base_dir)
         return _html_text_to_pdf(html_text, resolved_output_path, base_dir=base_dir)
     finally:
         _cleanup_browser()
@@ -53,6 +53,12 @@ def main() -> None:
     parser.add_argument("input", help="입력 Markdown 파일 경로 (.md)")
     parser.add_argument("-o", "--output", help="출력 PDF 파일 경로 (.pdf)")
     parser.add_argument("--title", default=None, help="문서 제목")
+    parser.add_argument(
+        "--math-mode",
+        choices=["image", "mathml"],
+        default="image",
+        help="수식 처리 방식: image=KaTeX PNG(기본), mathml=MathML 태그",
+    )
     args = parser.parse_args()
 
     in_path = args.input
@@ -60,7 +66,7 @@ def main() -> None:
         print(f"파일을 찾을 수 없습니다: {in_path}", file=sys.stderr)
         sys.exit(1)
 
-    md_to_pdf(in_path, args.output, args.title)
+    md_to_pdf(in_path, args.output, args.title, math_mode=args.math_mode)
 
 
 if __name__ == "__main__":
