@@ -35,12 +35,16 @@ requirements_rnac.check_and_install_dependencies()
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
+_REFERENCE_KIPS_DOCX = os.path.join(os.path.dirname(__file__), "reference_kips.docx")
+
+
 def md_to_doc(
     md_path: str,
     output_path: str,
     title: Optional[str] = None,
     reference_doc: Optional[str] = None,
     math_mode: str = "mathml",
+    kips: bool = False,
 ) -> None:
     """Markdown 파일을 DOCX로 변환
 
@@ -53,6 +57,7 @@ def md_to_doc(
             - "mathml": LaTeX→MathML HTML 삽입 후 html→docx (Pandoc MathML→OMML, 기본)
             - "omml"  : Pandoc md→docx 직접 변환 (수식 네이티브 OMML, 세부 튜닝 불가)
             - "image" : LaTeX→KaTeX PNG 이미지 후 html→docx
+        kips: True이면 KIPS 논문 스타일 적용 (reference_kips.docx + 셀 여백 0.05cm)
     """
     logging.info(f"Markdown 읽기: {md_path}")
     with open(md_path, "r", encoding="utf-8") as f:
@@ -60,7 +65,12 @@ def md_to_doc(
 
     from helper_md_doc.helper_html_doc import _REFERENCE_DOCX
 
-    ref_doc = reference_doc or _REFERENCE_DOCX
+    if reference_doc:
+        ref_doc = reference_doc
+    elif kips:
+        ref_doc = _REFERENCE_KIPS_DOCX
+    else:
+        ref_doc = _REFERENCE_DOCX
 
     if math_mode == "omml":
         # Mermaid만 PNG 파일로 치환, LaTeX는 pandoc이 직접 OMML로 변환
@@ -88,7 +98,7 @@ def md_to_doc(
                 tmp_md, "docx", outputfile=output_path, extra_args=extra_args)
 
             logging.debug("표 스타일/테두리/정렬 교정 중...")
-            fix_tables_in_docx(output_path)
+            fix_tables_in_docx(output_path, kips=kips, table_font_size=(8 if kips else None))
     else:
         # mathml / image 모드: HTML 경유 변환
         logging.debug(f"Markdown → HTML 변환 중 (math_mode={math_mode})...")
@@ -110,7 +120,7 @@ def md_to_doc(
         )
 
         logging.debug("표 스타일/테두리/정렬 교정 중...")
-        fix_tables_in_docx(output_path)
+        fix_tables_in_docx(output_path, kips=kips, table_font_size=(8 if kips else None))
 
         logging.debug("overline 수식 교정 중...")
         fix_overline_in_docx(output_path)
@@ -134,6 +144,12 @@ def main():
         default="mathml",
         help="수식 처리 방식: mathml=MathML→OMML(기본), omml=Pandoc 네이티브 OMML(세부 튜닝 불가), image=KaTeX PNG",
     )
+    parser.add_argument(
+        "--kips",
+        action="store_true",
+        default=False,
+        help="KIPS 논문 스타일 적용 (reference_kips.docx 사용, 표 셀 여백 0.05cm)",
+    )
     args = parser.parse_args()
 
     in_path = args.input
@@ -145,7 +161,7 @@ def main():
     title = args.title or os.path.splitext(os.path.basename(in_path))[0]
 
     md_to_doc(in_path, out_path, title,
-              reference_doc=args.reference_doc, math_mode=args.math_mode)
+              reference_doc=args.reference_doc, math_mode=args.math_mode, kips=args.kips)
 
 
 if __name__ == "__main__":

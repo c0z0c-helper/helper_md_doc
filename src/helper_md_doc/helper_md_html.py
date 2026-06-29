@@ -49,7 +49,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         hr {{ border: none; border-top: 1px solid #ddd; margin: 1.2em 0; }}
         a {{ color: #1a6ea8; text-decoration: none; }}
         table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; table-layout: auto; }}
-        th, td {{ border: 1px solid #ddd; padding: 0.4rem 0.5rem; text-align: left; word-break: break-word; overflow-wrap: break-word; vertical-align: top; min-width: 3em; max-width: 30em; }}
+        th, td {{ border: 1px solid #ddd; padding: 0.4rem 0.5rem; text-align: left; word-break: break-word; overflow-wrap: break-word; vertical-align: top; min-width: 3em; max-width: 30em; font-size: 8pt; }}
         th {{ background: #eef1f5; font-weight: 600; }}
         tbody tr:nth-child(even) {{ background: #f9fafb; }}
         .mermaid {{ margin: 1rem 0; }}

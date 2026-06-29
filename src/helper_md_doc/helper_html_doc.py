@@ -146,6 +146,19 @@ def clean_html_for_pandoc(html_text: str) -> str:
         html_text,
     )
 
+    def wrap_table_cell(m: re.Match) -> str:
+        tag = m.group(1)          # "td" 또는 "th"
+        attrs = m.group(2) or ""  # class, colspan 등 속성
+        inner = m.group(3)        # 셀 내부 HTML
+        return f'<{tag}{attrs}><div custom-style="In Table">{inner}</div></{tag}>'
+
+    html_text = re.sub(
+        r'<(t[dh])(\s[^>]*)?>(.+?)</\1>',
+        wrap_table_cell,
+        html_text,
+        flags=re.DOTALL,
+    )
+
     return html_text
 
 
