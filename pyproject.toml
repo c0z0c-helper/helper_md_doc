@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "helper-md-doc"
-version = "0.6.0"
+version = "0.6.1"
 description = "Markdown/HTML을 DOCX로 변환하는 문서 변환 라이브러리 (Mermaid/LaTeX 지원)"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -30,11 +30,14 @@ classifiers = [
 ]
 
 dependencies = [
-    "markdown>=3.7.0",
-    "playwright>=1.40.0",
-    "pypandoc>=1.13",
-    "Pillow>=10.0.0",
+    "markdown>=3.7.0,<4.0.0",
+    "playwright>=1.40.0,<2.0.0",
+    "pypandoc>=1.13,<2.0.0",
+    "pillow>=10.0.0,<12.0.0",
     "latex2mathml>=3.0.0",
+    "pip>=25.0.1",
+    "build>=1.2.2.post1",
+    "chromium>=0.0.0",
 ]
 
 [project.optional-dependencies]
@@ -69,6 +72,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 helper_md_doc = [
+    "py.typed",
     "katex/*.js",
     "katex/*.css",
     "katex/LICENSE",
@@ -89,3 +93,14 @@ target-version = ["py38", "py39", "py310", "py311", "py312"]
 [tool.ruff]
 line-length = 100
 target-version = "py38"
+
+[dependency-groups]
+dev = [
+    "black>=23.0.0",
+    "build>=1.0.0",
+    "lxml>=4.9.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "twine>=4.0.0",
+]

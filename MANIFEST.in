@@ -3,6 +3,7 @@ include LICENSE
 include THIRD_PARTY_LICENSES.md
 include requirements.txt
 include requirements-dev.txt
+include src/helper_md_doc/py.typed
 recursive-include src/helper_md_doc/katex *.js *.css LICENSE
 recursive-include src/helper_md_doc/katex/contrib *.js
 recursive-include src/helper_md_doc/katex/fonts *.ttf *.woff *.woff2 OFL.txt
