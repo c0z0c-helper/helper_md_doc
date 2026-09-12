@@ -5,7 +5,6 @@ from helper_md_doc.helper_html_doc import clean_html_for_pandoc  # mathml/image 
 from helper_md_doc.helper_docx_fix import fix_tables_in_docx, fix_overline_in_docx
 from helper_md_doc.helper_md_html import md_to_html, _cleanup_browser, replace_mermaid_with_images
 import pypandoc
-import importlib.util
 import argparse
 import os
 import re
@@ -22,13 +21,7 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 # 의존성 확인 및 설치
-
-spec = importlib.util.spec_from_file_location(
-    "requirements_rnac", os.path.join(
-        os.path.dirname(__file__), "requirements_rnac.py")
-)
-requirements_rnac = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(requirements_rnac)
+from helper_md_doc import requirements_rnac
 requirements_rnac.check_and_install_dependencies()
 
 
@@ -164,5 +157,9 @@ def main():
               reference_doc=args.reference_doc, math_mode=args.math_mode, kips=args.kips)
 
 
+def cli() -> None:
+    requirements_rnac.run_cli(main)
+
+
 if __name__ == "__main__":
-    main()
+    cli()

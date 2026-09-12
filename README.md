@@ -259,3 +259,13 @@ MIT License
 ### v0.6.1(2027-07-17)
 
 - 개발환경 uv 전환
+
+### v0.6.2(2026-09-10)
+
+- Playwright 드라이버 중복 기동 문제 수정: 서브모듈마다 `requirements_rnac`를 별도로 로드하던 구조를 공유 모듈 임포트로 변경하여, `md2doc` 실행 시 8회 반복되던 `Task was destroyed but it is pending!` / `TargetClosedError` 경고 제거
+- pandoc 실행 파일 자동 확인/설치 추가: pypandoc은 설치되어 있으나 pandoc 바이너리가 없는 환경(새 PC 등)에서 `OSError: No pandoc was found`로 실패하던 문제 수정. 종속성 확인 시 pandoc 미탐지 시 `pypandoc.download_pandoc()`으로 자동 설치
+
+### v0.6.3(2026-09-12)
+
+- 경고 로그 출력 개선
+

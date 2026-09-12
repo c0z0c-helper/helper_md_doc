@@ -1,12 +1,13 @@
 """Tests for helper_md_doc package"""
 
 import pytest
-from helper_md_doc import md_to_html, __version__
+
+from helper_md_doc import __version__, md_to_html
 
 
 def test_version():
     """버전이 올바르게 설정되었는지 확인"""
-    assert __version__ == "0.6.1"
+    assert __version__ == "0.6.3"
 
 
 def test_md_to_html_basic():
