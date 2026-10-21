@@ -52,7 +52,7 @@ from helper_md_doc.helper_md_html import md_to_html
 from helper_md_doc.helper_md_pdf import md_to_pdf
 from helper_md_doc.helper_md_text import md_to_text
 
-__version__ = "0.6.3"
+__version__ = "0.6.4"
 
 import os
 import sys
