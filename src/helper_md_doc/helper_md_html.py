@@ -16,6 +16,7 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 from helper_md_doc import requirements_rnac
+from helper_md_doc.helper_md_spacing import normalize_spacing
 requirements_rnac.check_and_install_dependencies()
 
 from helper_md_doc.helper_render import (
@@ -110,32 +111,8 @@ def is_list_or_special_line(line: str) -> bool:
 
 
 def normalize_markdown_spacing(md_text: str) -> str:
-    """Markdown 리스트 앞에 빈 줄 추가 및 이스케이프된 볼드 마커 복원 (python-markdown 호환성)"""
-    if md_text and md_text[0] == "\ufeff":
-        md_text = md_text[1:]
-
-    md_text = re.sub(r"\\\*\\\*([^*]+?)\\\*\\\*", r"**\1**", md_text)
-
-    lines = md_text.split("\n")
-    result_lines = []
-
-    for i, line in enumerate(lines):
-        result_lines.append(line)
-
-        if i < len(lines) - 1 and line.strip():
-            next_line = lines[i + 1]
-            if not next_line.strip():
-                continue
-            if is_list_or_special_line(line) and not re.match(
-                r"^(-{3,}|\*{3,}|_{3,})\s*$", line.lstrip()
-            ):
-                continue
-            if is_list_or_special_line(next_line):
-                result_lines.append("<p/>")
-
-    result = "\n".join(result_lines)
-    result = re.sub(r"(<br/>|<p/>)(\n(<br/>|<p/>))+", "<p/>", result)
-    return result
+    """목록 구조와 연속 기호 행의 줄바꿈을 빈 HTML 문단 없이 보존한다."""
+    return normalize_spacing(md_text)
 
 
 def replace_mermaid_with_images(

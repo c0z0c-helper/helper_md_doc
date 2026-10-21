@@ -55,3 +55,6 @@ dmypy.json
 .DS_Store
 Thumbs.db
 /.pypirc
+
+*.doc*
+*.pdf

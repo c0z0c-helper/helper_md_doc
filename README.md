@@ -203,28 +203,39 @@ MIT License
 
 ## 변경 이력
 
-### v0.5.1(2025-12-09)
-- 최초 릴리스
+### v0.6.3(2026-09-12)
 
-### v0.5.2(2025-12-09)
-- BOM 처리
-- ** 속성 적용
+- 경고 로그 출력 개선
 
-### v0.5.5(2025-12-11)
-- 종속 라이브러리 설치
+### v0.6.2(2026-09-10)
 
-### v0.5.6(2026-03-19)
-- 랜더링 최적화
+- Playwright 드라이버 중복 기동 문제 수정: 서브모듈마다 `requirements_rnac`를 별도로 로드하던 구조를 공유 모듈 임포트로 변경하여, `md2doc` 실행 시 8회 반복되던 `Task was destroyed but it is pending!` / `TargetClosedError` 경고 제거
+- pandoc 실행 파일 자동 확인/설치 추가: pypandoc은 설치되어 있으나 pandoc 바이너리가 없는 환경(새 PC 등)에서 `OSError: No pandoc was found`로 실패하던 문제 수정. 종속성 확인 시 pandoc 미탐지 시 `pypandoc.download_pandoc()`으로 자동 설치
 
-### v0.5.8(2026-03-21)
-- doc 변환시 기본 폰트 D2Coding 적용
-- D2Coding 폰트 자동 설치
+### v0.6.1(2027-07-17)
 
-### v0.5.9(2026-04-18)
+- 개발환경 uv 전환
 
-- HTML → PDF 변환 기능 추가
-- Markdown → PDF 변환 기능 추가
-- `html2pdf`, `md2pdf` CLI 추가
+### v0.6.0(2026-06-29)
+
+- `md2doc` 테이블 셀 단락에 "In Table" 스타일 적용
+
+### v0.5.16(2026-05-23)
+
+- PDF 출력 품질 개선: 폰트 크기 체계(본문 10pt, h1~h6 11~16pt), 여백, 테이블·코드블록 CSS 정비
+- 이미지 상대경로 문제 수정: md 파일 위치 기준으로 이미지 탐색 (`md_dir` 파라미터 추가)
+- DOCX 변환 시 이미지 정상 포함
+
+### v0.5.15(2026-05-17)
+
+- 수식 랜더링 docx 변환시 mathml → omml로 변경 (품질 향상)
+- table outline 개선
+
+### v0.5.13(2026-05-09)
+
+- HTML → PDF 변환 기능 개선
+- Markdown → PDF 변환 기능 개선
+- 누락 라이브러리 감지 및 설치 안내 기능 추가
 
 ### v0.5.11(2026-05-01)
 
@@ -234,38 +245,25 @@ MIT License
   - HTML → Markdown 변환 (`html_to_md`, `html2md` CLI)
   - Markdown → 순수 텍스트 변환 (`md_to_text`, `md2text` CLI)
 
-### v0.5.13(2026-05-09)
+### v0.5.9(2026-04-18)
 
-- HTML → PDF 변환 기능 개선
-- Markdown → PDF 변환 기능 개선
-- 누락 라이브러리 감지 및 설치 안내 기능 추가
+- HTML → PDF 변환 기능 추가
+- Markdown → PDF 변환 기능 추가
+- `html2pdf`, `md2pdf` CLI 추가
 
-### v0.5.15(2026-05-17)
+### v0.5.8(2026-03-21)
+- doc 변환시 기본 폰트 D2Coding 적용
+- D2Coding 폰트 자동 설치
 
-- 수식 랜더링 docx 변환시 mathml → omml로 변경 (품질 향상)
-- table outline 개선
+### v0.5.6(2026-03-19)
+- 랜더링 최적화
 
+### v0.5.5(2025-12-11)
+- 종속 라이브러리 설치
 
-### v0.5.16(2026-05-23)
+### v0.5.2(2025-12-09)
+- BOM 처리
+- ** 속성 적용
 
-- PDF 출력 품질 개선: 폰트 크기 체계(본문 10pt, h1~h6 11~16pt), 여백, 테이블·코드블록 CSS 정비
-- 이미지 상대경로 문제 수정: md 파일 위치 기준으로 이미지 탐색 (`md_dir` 파라미터 추가)
-- DOCX 변환 시 이미지 정상 포함
-
-### v0.6.0(2026-06-29)
-
-- `md2doc` 테이블 셀 단락에 "In Table" 스타일 적용
-
-### v0.6.1(2027-07-17)
-
-- 개발환경 uv 전환
-
-### v0.6.2(2026-09-10)
-
-- Playwright 드라이버 중복 기동 문제 수정: 서브모듈마다 `requirements_rnac`를 별도로 로드하던 구조를 공유 모듈 임포트로 변경하여, `md2doc` 실행 시 8회 반복되던 `Task was destroyed but it is pending!` / `TargetClosedError` 경고 제거
-- pandoc 실행 파일 자동 확인/설치 추가: pypandoc은 설치되어 있으나 pandoc 바이너리가 없는 환경(새 PC 등)에서 `OSError: No pandoc was found`로 실패하던 문제 수정. 종속성 확인 시 pandoc 미탐지 시 `pypandoc.download_pandoc()`으로 자동 설치
-
-### v0.6.3(2026-09-12)
-
-- 경고 로그 출력 개선
-
+### v0.5.1(2025-12-09)
+- 최초 릴리스
